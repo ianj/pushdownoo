@@ -63,9 +63,9 @@ trait StateSpace {
    * 2.  FieldAddr = ObjectPointer * FieldName
    * 3.  KontAddr = not Known yet ...
    ********************************************/
-  sealed abstract case class Addr //extends some Ordering 
+  sealed abstract class Addr //extends some Ordering 
   
-  abstract case class OffsetAddr extends Addr {
+  abstract class OffsetAddr extends Addr {
     def pointer : Pointer
     def offset : String
   
@@ -139,7 +139,7 @@ trait StateSpace {
   /**
    * FOr simplest string abstraction
    */
-  abstract case class AbstractStringLiteral extends Value
+  abstract class AbstractStringLiteral extends Value
   case class StringLit(str: String) extends AbstractStringLiteral
   case object StringTop extends AbstractStringLiteral
   

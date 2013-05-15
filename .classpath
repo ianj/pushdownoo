@@ -3,7 +3,7 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry kind="lib" path="/Volumes/MI/wk_ef/pdafordalvik/lib/scala-compiler-src.jar"/>
-	<classpathentry kind="lib" path="/Volumes/MI/wk_ef/pdafordalvik/lib/scala-compiler.jar"/>
+	<classpathentry kind="var" path="SCALA_LIB_PATH/scala-compiler.jar"/>
+	<classpathentry kind="var" path="SCALA_SRC_PATH/scala-compiler-src.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

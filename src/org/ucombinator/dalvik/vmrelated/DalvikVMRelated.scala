@@ -86,7 +86,7 @@ trait DalvikVMRelated {
         superClassStrs.contains("java/lang/Runnable")
       }
     }
-     val filteredAndroids = extractedEns -- nonAndoridEns
+     val filteredAndroids = extractedEns filterNot (nonAndoridEns contains) // -- deprecated
      filteredAndroids ++ nonAndoridEns
   }
   
@@ -217,7 +217,7 @@ trait DalvikVMRelated {
       })
 
       val id = initDefs(idex)
-      val restt = initDefs - id
+      val restt = initDefs filterNot (_ == id)
       (id, restt)
     }
   }
@@ -266,8 +266,8 @@ trait DalvikVMRelated {
     })
    
     val exactOnCreates = anyONCreates.filter(_.methodPath.endsWith("onCreate"))
-    val notExactOnCretae = anyONCreates -- exactOnCreates
-    val restElems = ens -- anyONCreates  
+    val notExactOnCretae = anyONCreates filterNot (exactOnCreates contains)
+    val restElems = ens filterNot (anyONCreates contains)  
     exactOnCreates ::: notExactOnCretae ::: restElems
    
   }

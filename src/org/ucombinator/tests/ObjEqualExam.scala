@@ -3,25 +3,23 @@ package org.ucombinator.tests
 object ObjEqualExam {
 
   case class TestClassKey(s: String, i:Int)  {
-    def str = s
-    def in = i
     
     override def equals (other : Any) = other match {
-      case that : TestClassKey => (that canEqual this ) && (this.str == that.str) && (this.in == that.in)
+      case that : TestClassKey => (that canEqual this ) && (this.s == that.s) && (this.i == that.i)
       case _ => false
     }
-    override def hashCode = 41* (41 + in) + in
+    override def hashCode = 41* (41 + i) + i
     override def canEqual(other : Any) = other.isInstanceOf[TestClassKey]
   }
   
-  case class SubTestClassKey(ss: String, ii: Int, b : Boolean) extends TestClassKey(ss,ii){
+  case class SubTestClassKey(ss: String, ii: Int, b : Boolean) {
     def bool = b
     override def equals (other : Any) = other match {
       case that : SubTestClassKey => 
-        (that canEqual this ) && (this.str == that.str) && (this.in == that.in) && (this.b == that.b)
+        (that canEqual this ) && (this.ss == that.ss) && (this.ii == that.ii) && (this.b == that.b)
       case _ => false
     }
-    override def hashCode = 41* (41 + in) * in
+    override def hashCode = 41* (41 + ii) * ii
     override def canEqual(other : Any) = other.isInstanceOf[SubTestClassKey] 
   }
   def main(args: Array[String]): Unit = {

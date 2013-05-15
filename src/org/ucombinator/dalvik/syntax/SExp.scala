@@ -242,11 +242,12 @@ case class SKeyword(val string: String) extends SExp with Ordered[SKeyword] {
 }
 
 
-abstract case class SSymbol(val string: String) extends SExp {
+abstract class SSymbol(val s: String) extends SExp {
+	def string = s
 }
 
 
-final case class SName(s: String, version: Int) extends SSymbol(s) with Ordered[SName] {
+final case class SName(override val s: String, version: Int) extends SSymbol(s) with Ordered[SName] {
   def compare(that: SName): Int = that match {
     case SName(s2, v2) => {
       val cmpString = s compare s2
@@ -262,7 +263,7 @@ final case class SName(s: String, version: Int) extends SSymbol(s) with Ordered[
       string
     } else {
       if (SExp.shouldNamesBeSymbols)
-        s + "$" + version
+        string + "$" + version
       else
         "#name[" + string + " " + version + "]"
     }

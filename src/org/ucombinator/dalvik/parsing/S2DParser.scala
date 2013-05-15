@@ -1194,7 +1194,7 @@ object S2DParser {
 
   def apply(sexps: List[SExp]): Option[DalvikClassDef] = {
     val p = new S2DParser
-    p.parseClassDef(sexps.first)
+    p.parseClassDef(sexps.head)
   }
 }
 
