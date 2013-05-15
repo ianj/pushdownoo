@@ -339,7 +339,7 @@ trait TransitionHandlers extends StateSpace with ExternalLibCallsHandler with Ex
         Set(newState)
       }
 
-      case AutomicOpExp(opCode, aExps @ _*) => {
+      case AtomicOpExp(opCode, aExps @ _*) => {
         if (isPrimitiveNumerical(opCode)) {
           Debug.prntDebugInfo("@AssignAExpStmt:Automic " + opCode.toString(), assignS)
           Debug.prntDebugInfo("Next is: ", assignS.next)

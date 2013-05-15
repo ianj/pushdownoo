@@ -22,14 +22,13 @@ trait StateSpace {
   type Time 
   
   
-  sealed trait Pointer { //extends Ordered[Pointer]{
-    // def compare (that: Pointer) 
-    // for any given pointer, we would like to converting offset into the 
+  sealed trait Pointer {
+    // for any given pointer, we would like to convert its offset into the 
     // address
     def offset (name: String) : Addr
   }
- // case class FramePointer(t: Time, meth: String) extends Pointer {
-  case class FramePointer(t: Time, meth: Stmt) extends Pointer {
+
+case class FramePointer(t: Time, meth: Stmt) extends Pointer {
     def offset(regName: String) : RegAddr = new RegAddr(this, regName)
    
     /**
@@ -38,18 +37,10 @@ trait StateSpace {
      * we can do at the same time is to set the live regs information to
      * the liveRegs, which will be used in GC
      */
-    def push(t: Time, invkSt: Stmt // Stmt
-        ): FramePointer = {
-      
-      new FramePointer(t, invkSt)
-    } 
+    def push(t: Time, invkSt: Stmt): FramePointer = new FramePointer(t, invkSt)
     override def toString = "FP(" + meth + " )"
-    
-    // it is said will not affect equality of the frame pointer
-  //  var liveRegs : Set[String] = Set()
-
- 
   }
+
   case class ObjectPointer(t: Time, clsName: String, lineNo: Stmt) extends Pointer {
     
     def offset(fieldName: String): FieldAddr = new FieldAddr(this, fieldName)
@@ -187,27 +178,24 @@ trait StateSpace {
       Debug.prntDebugInfo("not object or array", typeStr)
       typeStr match {
         case "int" | "float" | "double" | "long" | "short"  => Set(NumTop)
-        case  "boolean" =>  Set(BoolTop)
+        case "boolean" =>  Set(BoolTop)
         case "void" => Set(new VoidValue)
-       // case "byte" | "char" => waht?
         case _ => Set( UnspecifiedVal)
       }
     }
   }
   
   /*********************************************************************************************
-   * Configurations are split into contorl states and continuation frames.
-   * so that PDA and kCFA can coexisit in one framework
+   * Configurations are split into control states and continuation frames.
+   * so that PDA and kCFA can coexist in one framework
    *********************************************************************************************/
    
   abstract sealed class ControlState
   
   /**
-   * Life the old not rich st to the follwoing
+   * Life the old not rich st to the following
    */
 
-  
- // case class PartialState(st: Stmt, fp: FramePointer, s: Store, kptr: KAddr, t:Time) extends ControlState
   case class PartialState(st: StForEqual, fp: FramePointer, s: Store, kptr: KAddr, t:Time) extends ControlState
   
   case class FinalState() extends ControlState
@@ -230,13 +218,7 @@ trait StateSpace {
    */
   // abstract member
   def k : Int
-   
- //def alloc() : Addr
 
- 
-  
-
-  
   /******************************************************
    * Utility functions
    ******************************************************/
@@ -320,18 +302,19 @@ trait StateSpace {
     })
   }
    
-  // wil merge all the stores
+  // will merge all the stores
  def mergeStores[K, V](
      initial: K :-> Set[V], 
      newStores: List[K :-> Set[V]]): K :-> Set[V] = {
-    newStores.foldLeft(initial)((result, current) =>
-    mergeTwoStores(result, current))
+    newStores.foldLeft(initial)(mergeTwoStores)
   }
   
   def getMonovariantStore(states: Set[ControlState]): Addr:-> Set[Value] = {
     
      val allRegularStores =  states.map {
       case PartialState(_, _, s, _,_) => s
+      case ErrorState(state,msg ) => ???
+      case FinalState() => ???
      }
      val emptyMonovariantStore : Addr :-> Set[Value] = Map.empty
     mergeStores(emptyMonovariantStore, allRegularStores.toList)

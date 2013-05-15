@@ -114,7 +114,7 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
         Debug.prntDebugInfo("CurNext is: ", curN)
         val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
         Debug.prntDebugInfo("RealNext is: ", realN)
-        val lblStrs = pswS.lables
+        val lblStrs = pswS.labels
         Debug.prntDebugInfo("stmt Map is ", Stmt.stmtMap)
         handleSwitch(pswS, lblStrs, realN, fp, s, kptr, t, k)
       }

@@ -7,10 +7,17 @@ import org.ucombinator.utils.CommonUtils
 
 import org.ucombinator.utils.Debug
 
-
+/*
+ * AExp ::= BooleanExp(bool) | StringLitExp(str) | CharLitExp(char) | IntExp(int)
+ *        | VoidExp | ThisExp | NullExp | RegisterExp(name) | AtomicOpExp(name, AExp ...)
+ *        | InstanceOfExp | StaticFieldExp(field-path, type) | NonStaticFieldExp(AExp, field-path, type)
+ * Stmt ::= IfStmt(AExp, ???) | SwitchStmt(???) | AssignAExpStmt(AExp, AExp, ???) | more...
+ */
 
 
 sealed abstract class AExp
+
+/* Literal expressions */
 
 case class BooleanExp(sb: SBoolean) extends AExp {
   def value = sb.toString()
@@ -24,39 +31,40 @@ case class CharLitExp(sc: SChar) extends AExp {
   def cha = sc
 }
 
+case class IntExp(si: SInt) extends AExp {
+  def numVal = StringUtils.strToInt(si.toString())
+}
+
 case class VoidExp extends AExp {
 }
+
+/* Special identifier expressions */
 
 //TODO
 case class ThisExp extends AExp{}
 
 case class NullExp extends AExp{}
 
+/* */
+
 case class RegisterExp(sv: SName) extends AExp {
   def regStr = sv.toString
   
   override def toString = regStr
-
 }
 
-case class IntExp(si: SInt) extends AExp {
-  def numVal = StringUtils.strToInt(si.toString())
-}
-
-case class AutomicOpExp(opStr: SName, aes: AExp*) extends AExp {
+case class AtomicOpExp(opStr: SName, aes: AExp*) extends AExp {
   def sopCode = opStr
   def ops = aes
   
-  override def toString = StringUtils.truncateIfLong("AutomicOpExp" + "(" + opStr + "," + aes, 100)
+  override def toString = StringUtils.truncateIfLong("AtomicOpExp" + "(" + opStr + "," + aes, 100)
 }
 
 case class InstanceofExp extends AExp
 
 abstract sealed class FieldExp( fp : String, ft: String) extends AExp{
- // def objExp : AExp =  oe
-  def fieldPath : String = fp
+  def fieldPath: String = fp
   def fieldType: String = ft
-  //def modifier: String = modi
 }
 case class StaticFieldExp ( fp : String, ft: String) extends FieldExp(fp, ft) {}
 case class NonStaticFieldExp(or: AExp, fp : String, ft: String) extends FieldExp(fp, ft){
@@ -97,21 +105,14 @@ abstract class Stmt  {
    
      def methPath: String
    def methPath_=(str : String )
-  //def lineNumber: LineStmt
 
-  /*protected def register(label: String) {
-    Stmt.stmtMap += (label -> this)
-  }
-*/
   def refRegsStrSet : Set[String]  
   def defRegsStrSet: Set[String]
 }
 
 object Stmt {
-   val stmtMap: Map[String, LabelStmt] = Map.empty
- // def register(label: String, lst: LabelStmt) {
-  //  Stmt.stmtMap += (label -> lst)}
-   
+  val stmtMap: Map[String, LabelStmt] = Map.empty  
+  
   var liveMap : ImmMap[StForEqual, Set[String]] = ImmMap()
   
   def forLabel(label: String) = stmtMap.get(label)
@@ -255,7 +256,7 @@ case class IfStmt(condExp: AExp, sucLabel: String, nxt: Stmt, ls: Stmt, clsP: St
         Set( re.regStr)
       }
       
-      case aoe@AutomicOpExp(if2,  aExps @ _*) => {
+      case aoe@AtomicOpExp(if2,  aExps @ _*) => {
         val operatorAes = aoe.ops.toList
         CommonUtils.getRegStrsListFromAExpList(operatorAes)
       }
@@ -267,7 +268,7 @@ case class IfStmt(condExp: AExp, sucLabel: String, nxt: Stmt, ls: Stmt, clsP: St
   }
 }
 
-case class SwitchStmt(testExp: AExp, offset: String, lables: List[AExp],   nxt: Stmt, ls: Stmt, clsP: String, methP: String) extends Stmt {
+case class SwitchStmt(testExp: AExp, offset: String, labels: List[AExp],   nxt: Stmt, ls: Stmt, clsP: String, methP: String) extends Stmt {
   var next  = nxt
   var lineNumber = ls
     var clsPath = clsP
@@ -279,7 +280,7 @@ case class SwitchStmt(testExp: AExp, offset: String, lables: List[AExp],   nxt: 
    */
   def getBranchStmts : (List[Stmt], List[Stmt]) = {
         val sExps = 
-           lables filter ((lba) => {
+           labels filter ((lba) => {
         	   	lba match {
         	   		case sle@StringLitExp(_) => true
             	 	case _ => false
@@ -343,7 +344,7 @@ case class AssignAExpStmt(lhReg: AExp, rhExp: AExp, nxt: Stmt, ls : Stmt, clsP: 
       case re@RegisterExp(sv) => { // should be move-result
         Set(re.regStr)
       }
-      case AutomicOpExp(opCode, aExps @ _*) => {
+      case AtomicOpExp(opCode, aExps @ _*) => {
         CommonUtils.getRegStrsListFromAExpList(aExps.toList)
       }
       // otherwise, it will be in the aExps

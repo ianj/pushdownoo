@@ -103,7 +103,7 @@ object ParsingUtils {
       case SIfEqz | SIfNez | SIfle | SIfLtz | SIfGez | SIfGtz | SIfLez =>
         new IfStmt(regAe, lblStr, next, StmtNil, clsP, methP)
       case (if2: SName) => {
-        val cond = new AutomicOpExp(if2, List(RegisterExp(se), RegisterExp(se2)): _*)
+        val cond = new AtomicOpExp(if2, List(RegisterExp(se), RegisterExp(se2)): _*)
         new IfStmt(cond, lblStr, next, StmtNil, clsP, methP)
       }
     }
@@ -142,7 +142,7 @@ object ParsingUtils {
     val lhs = operators.head
      val rest = 
     if(isTwoAddr) operators else operators.tail
-    val rhs = new AutomicOpExp(op, rest: _*)
+    val rhs = new AtomicOpExp(op, rest: _*)
     new AssignAExpStmt(lhs, rhs, next, StmtNil, clsP, methP)
   }
 

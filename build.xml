@@ -77,7 +77,11 @@
         <include name="**/?*.tld"/>
         <include name="**/?*.ftl"/>
     </patternset>
-    
+
+	<presetdef name="javac">
+		<javac includeantruntime="false" />
+	</presetdef>
+	
     <!-- JDK definitions -->
     
     <property name="jdk.bin" value="${jdk.home}/bin"/>
@@ -190,13 +194,13 @@
             <include name="src"/>
         </dirset>
     </path>
-    
+    <!--
     <path id="pushdownexflow.module.test.sourcepath">
         <dirset dir="${module.pushdownexflow.basedir}">
             <include name="test"/>
         </dirset>
     </path>
-
+-->
     <!-- targets -->
 
     <target name="compile"
@@ -236,6 +240,7 @@
         </copy>
         
         <mkdir dir="${pushdownexflow.testoutput.dir}"/>
+    	<!--
         <scalac destdir="${pushdownexflow.testoutput.dir}">
             <src refid="pushdownexflow.module.test.sourcepath"/>
             <classpath>
@@ -244,6 +249,8 @@
             </classpath>
             <patternset refid="excluded.from.compilation.pushdownexflow"/>
         </scalac>
+        	-->
+    	<!--
         <javac destdir="${pushdownexflow.testoutput.dir}" debug="${compiler.debug}"
             nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true"
             executable="${module.jdk.bin.pushdownexflow}/javac">
@@ -256,19 +263,20 @@
             </classpath>
             <src refid="pushdownexflow.module.test.sourcepath"/>
             <patternset refid="excluded.from.compilation.pushdownexflow"/>
-        </javac>
+        </javac> -->
     </target>
     
     <target name="compile.module.pushdownexflow.test" depends="compile.module.pushdownexflow.production"
         description="compile module pushdownexflow; test classes" unless="skip.tests">
         <mkdir dir="${pushdownexflow.testoutput.dir}"/>
-        
+        <!--
         <copy todir="${pushdownexflow.testoutput.dir}">
             <fileset dir="${module.pushdownexflow.basedir}/test">
                 <patternset refid="compiler.resources"/>
                 <type type="file"/>
             </fileset>
         </copy>
+        -->
     </target>
     
     <taskdef name="scalatest" classname="org.scalatest.tools.ScalaTestAntTask">
@@ -281,7 +289,7 @@
     
     <target name="clean.module.pushdownexflow" description="cleanup module">
         <delete dir="${pushdownexflow.output.dir}"/>
-        <delete dir="${pushdownexflow.testoutput.dir}"/>
+        <!--<delete dir="${pushdownexflow.testoutput.dir}"/>-->
         <delete dir="graphs"/>
         <delete dir="statistics"/>
     </target>
@@ -298,11 +306,11 @@
     <!-- #################################################-->
     <!-- Tests -->
     <!-- #################################################-->
-    
+    <!--
     <target name="run.tests" depends="compile.module.pushdownexflow.test">
         <scalatest runpath="${pushdownexflow.testoutput.dir}"/>
     </target>
-    
+    -->
     
     <!-- #################################################-->
     <!-- Zip project -->

@@ -8,7 +8,7 @@ import org.ucombinator.dalvik.syntax.StForEqual
 import org.ucombinator.dalvik.syntax.FieldAssignStmt
 import org.ucombinator.dalvik.syntax.NonStaticFieldExp
 import org.ucombinator.dalvik.syntax.AssignAExpStmt
-import org.ucombinator.dalvik.syntax.AutomicOpExp
+import org.ucombinator.dalvik.syntax.AtomicOpExp
 
 
 trait PDCFAGarbageCollector extends DalvikGarbageCollector with StackCESKMachinary with StmtForEqual {
@@ -47,25 +47,6 @@ trait PDCFAGarbageCollector extends DalvikGarbageCollector with StackCESKMachina
    //   val stStr = CommonUtils.constrDistinctStatementStr(st)
       val liveRegs = Stmt.liveMap(st )
       
-     /* st match {
-        case StForEqual(fs@FieldAssignStmt(NonStaticFieldExp(_, _, _), rhExp, nxt, ls ,_,_), _, _,_,_) => {
-          println("gc hit fieldassign:" , fs)
-          println("the live regs are: ", liveRegs)
-        }
-        case StForEqual(fs@FieldAssignStmt(rhExp , NonStaticFieldExp(_, _, _), nxt, ls ,_,_), _, _,_,_) => {
-           println("the addrs found by currnet fp is")
-          addrs.foreach(println)
-          println("gc iget hit fieldassign:" , fs)
-          println("the live regs are: ", liveRegs)
-        }
-        case StForEqual(aa@AssignAExpStmt(_, AutomicOpExp(_, _*), _, _,_,_) , _ ,_,_,_)=> {
-          println("the addrs found by currnet fp is")
-          addrs.foreach(println)
-           println("gc AssignAExpStmt:" , aa)
-          println("the live regs are: ", liveRegs)
-        }
-        case _ => {}
-      }*/
       addrs.filter{
          case RegAddr(ifp, offs) => { liveRegs.contains(offs) }
       }
