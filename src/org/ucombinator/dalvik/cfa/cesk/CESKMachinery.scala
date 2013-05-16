@@ -8,32 +8,23 @@ import org.ucombinator.utils.Debug
 /** 
  *  Basic functionality of CESK-based formalisms
  *  Two kinds of subtypes: 
- *  for convinient, stil the time-stamped CESK
+ *  for convenient, still the time-stamped CESK
  *  
  *  1. Frame-based CESK for PDCFA
  *  2. Pointer-based CESK for traditional kCFA
  */
 
-trait CESKMachinary extends StateSpace with DalvikVMRelated {
+trait CESKMachinery extends StateSpace with DalvikVMRelated {
 
  /*****************
   * Utility Functions 
   *****************/
 
-  
+  /* Abstract!! */
   def atomEval(ae: AExp, fp: FramePointer, s:Store) : Set[Value] = {
     ae match {
-      case BooleanExp(s) => {
-        s.toString() match {
-          case "#t" => Set( BoolTop )
-          case "#f" => Set( BoolTop)
-        }
-      }
-      case IntExp(si) => {
-        //here we go: return the number as top
-        Set(NumTop)
-       // Set( IntValue(si.value))
-      }
+      case BooleanExp(_) => Set(BoolTop)
+      case IntExp(si) => Set(NumTop)
       case n: NullExp => Set(new NullValue)
       case ve: VoidExp => Set(new VoidValue)
       
@@ -41,36 +32,12 @@ trait CESKMachinary extends StateSpace with DalvikVMRelated {
        val regAddr =  fp.offset(re.regStr)
        storeLookup(s,regAddr)
       }
-      
-      // For string exp evaluation
-      case sle@StringLitExp(_) => {
-       Set(StringLit(sle.strLit))
-      }
-      //case FieldExp(fieldPath, fieldType) => {
-        
-     // }
-     // case (regExp: RegisterExp(sv)) =>{
-        
-    //  }
-      
+      case sle@StringLitExp(_) => Set(StringLit(sle.strLit))
+      case _ => throw new RuntimeException("Nonatomic expression: " + ae.toString())      
     }
   }
   
-  def getReturnOffSet(fp: FramePointer) : Addr = {
-    fp.offset("ret")
-  }
-
-  /**
-   * don't need
-   */
-   def isAtomic(ae: AExp): Boolean = ae match {
-    case BooleanExp(_) => true
-    case IntExp(_) => true
-    case n: NullExp => true
-    case ve: VoidExp => true
-    case re@(RegisterExp(sv))  => true
-    case _ => false
-  }
+  def getReturnOffSet(fp: FramePointer) : Addr = fp.offset("ret")
    
   /**
    * sucks to have to detect this. could be done at the front end for each case
@@ -169,12 +136,6 @@ trait CESKMachinary extends StateSpace with DalvikVMRelated {
       case _ => false
     })
     vs.map(_.asInstanceOf[ObjectValue])
-   /*vs.map ((s)=>{
-     s match {
-       case ob@(ObjectValue(_,_)) => {s.asInstanceOf[ObjectValue]}
-       case ObjectSomeTop(_) => {s.asInstanceOf[ObjectSomeTop]}
-     }
-   })*/
   }
   
   def filterStrObjVals(objVals: Set[ObjectValue]) : Set[ObjectValue] ={
@@ -202,7 +163,7 @@ trait CESKMachinary extends StateSpace with DalvikVMRelated {
   
   /**
    * called in new instance transition
-   * class instantication: have the current class type memory map
+   * class instantiation: have the current class type memory map
    * as well as all the super class memory map
    */
   
@@ -212,16 +173,14 @@ trait CESKMachinary extends StateSpace with DalvikVMRelated {
     clsDefO match {
       case Some(cd) => {
         val fields = cd.getAllFields
-         Debug.prntDebugInfo("fields of clsName: " + clsName, fields)
-      fields
+        Debug.prntDebugInfo("fields of clsName: " + clsName, fields)
+        fields
       }
-      case None => {
-        List()
-      }
+      case None => List()
     }
   }
    /**
-    * modifed to do strong udpate  along with the allocation site NewStmt
+    * modified to do strong update  along with the allocation site NewStmt
     */
   def initObject(classPath: String, s: Store, op: ObjectPointer) : Store ={
     val fieldPathStrs = getFieldTypeStrs(classPath)
@@ -240,8 +199,8 @@ trait CESKMachinary extends StateSpace with DalvikVMRelated {
     case ErrorState(_, _) => true
     /**
      * Be careful with the following!
-     * when can the parital state have empty continuation?
-     * Currnently NO?
+     * when can the partial state have empty continuation?
+     * Currently NO?
      */
     case PartialState(st, fp, store, kptr, t) => true
     //  if isAtomic(ae) => true

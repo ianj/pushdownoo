@@ -1,6 +1,6 @@
 package org.ucombinator.dalvik.exceptionhandling
 import org.ucombinator.dalvik.cfa.cesk.StateSpace
-import org.ucombinator.dalvik.cfa.cesk.CESKMachinary
+import org.ucombinator.dalvik.cfa.cesk.CESKMachinery
 import org.ucombinator.utils.Debug
 import org.ucombinator.utils.CommonUtils
 import org.ucombinator.dalvik.syntax.{Stmt,StmtNil,DalvikClassDef, MethodDef, MoveExceptionStmt,RegisterExp}
@@ -11,9 +11,9 @@ import org.ucombinator.dalvik.preanalysis.LiveRegisterAnalysis
 import org.ucombinator.dalvik.statistics.Statistics
 
 
-trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual with LiveRegisterAnalysis{
+trait ExceptionHandling extends StateSpace with CESKMachinery with StmtForEqual with LiveRegisterAnalysis{
 
-   type Kont = List[Frame]
+  type Kont = List[Frame]
   
   type Time = List[Stmt]
 
@@ -132,7 +132,7 @@ trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual 
       st: Stmt, 
       kptr: KAddr): Set[Conf] = {
     
-    //yeah, we are going to brach to hte handler if there are any
+    //yeah, we are going to branch to the handler if there are any
    // val handlerMgr = methDef.localHandlers
     
     val tyLblPairs = handlerMgr.getNonFinallyExnAndNxtStPairs
@@ -144,7 +144,7 @@ trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual 
       val clsP = ""
       val methP = ""
       val linNO = CommonUtils.getThrownLineNumer(clsP, methP)
-       val exnOp = ObjectPointer(t, p._1, st.lineNumber) // XX: NOTE: supposed we always can refernce to the line number here!
+       val exnOp = ObjectPointer(t, p._1, st.lineNumber) // XX: NOTE: supposed we always can reference to the line number here!
        val objVal = ObjectValue(exnOp, p._1)
        // so you see, the newly generated injstmt, the next stmt is StmtNil
        val injStmt = InjectThrownStmt(Set(objVal), p._2, linNO, clsP, methP)
@@ -183,7 +183,7 @@ trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual 
        nextLiveRegs: Set[String]): Set[Conf] = {
     val injStmtLsts = exnTypes.foldLeft(List[InjectThrownStmt]())((res, inTyStr) => {
        val linNO = StmtNil //CommonUtils.getThrownLineNumer You mother fucker!!! line!!!!!!!!!!
-       val exnOp = ObjectPointer(t, inTyStr, st.lineNumber) // XX: NOTE: supposed we always can refernce to the line number here!
+       val exnOp = ObjectPointer(t, inTyStr, st.lineNumber) // XX: NOTE: supposed we always can reference to the line number here!
        val objVal = ObjectValue(exnOp, inTyStr)
        // so you see, the newly generated injstmt, the next stmt is StmtNil
        // but we are going to test on the lineNO later in the state with InjectThrownStmt
@@ -194,7 +194,7 @@ trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual 
      /**
         * Here when instrumenting the exception thrown state, we are doing something
         *  We'll need to extend it to the liveMap anyway, no matter the option is turned on or not  
-        *  and in the way taht don't change current pre-computed fixed point!
+        *  and in the way that don't change current pre-computed fixed point!
         */
    if(injStmtLsts.isEmpty){
      
@@ -249,7 +249,7 @@ trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual 
    }
    
    /**
-   * Deal with hte inject Stmt
+   * Deal with the inject Stmt
    */
   
    def handleInjectExnStmt(itS: InjectThrownStmt, s: Store, nxt: Stmt, fp: FramePointer, kptr: KAddr, t: Time, k: Kont, clsP: String, methP: String): Set[Conf] = {
@@ -347,7 +347,7 @@ trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual 
          }*/
        
      }
-     // this is the normal case. There are several posibility
+     // this is the normal case. There are several possibility
      case  hd :: tl => {
       
        hd match {
@@ -361,9 +361,9 @@ trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual 
                    val realN = CommonUtils.findNextStmtNotLineOrLabel(st)
                    val nxtN = getProperStmt(ijt, allVals)
                     val newStore = storeUpdate(s, List((fp.offset("exn"), exnValue)))
-                  // One is the original injectthtown , the toher state is the finally
+                  // One is the original injectthrown , the other state is the finally
                 //   Set((PartialState(nxtN, fp, s, kptr, tp), tl)) ++ 
-                   Set((PartialState(buildStForEqual(realN ), fp, newStore, kptr, tp), tl)) // shoudl the finally get the rest kontinuation.I think so
+                   Set((PartialState(buildStForEqual(realN ), fp, newStore, kptr, tp), tl)) // should the finally get the rest kontinuation.I think so
                  }
                  case None => {throw new CESKException("the finally handler is not inthe label table in injectThrown statement inspectStack")}
                }
@@ -372,7 +372,7 @@ trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual 
              // the normal case, the interpretation will just branches to it. if the type matches.
              case "normal" => {
               
-               // if found the exacty type or super type exception handler
+               // if found the exact type or super type exception handler
                if((exnType == handleExnType) || DalvikClassDef.isInstanceofParents(exnType,handleExnType)){
                
                   val handlerStO = Stmt.forLabel(lbl)
@@ -385,7 +385,7 @@ trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual 
                    case None =>  {throw new CESKException("the finally handler is not inthe label table in injectThrown statement inspectStack")}         
                  }
                }
-               // we continue to pop based on the InjectThrownStmt, based on hte current rest frames{
+               // we continue to pop based on the InjectThrownStmt, based on the current rest frames{
                
                else{
                
@@ -395,7 +395,7 @@ trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual 
              }
            }
          }
-         case fnk@FNKFrame(st, fp)  => { //just conitnue to pop.
+         case fnk@FNKFrame(st, fp)  => { //just continue to pop.
            val nxtS = getProperStmt(ijt, allVals)
           // println(nxtS)
            Set((PartialState(buildStForEqual(nxtS ) , fp, s, kptr, tp), tl))
@@ -404,7 +404,7 @@ trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual 
          
        } //end hd :: tl
      }
-       //stop  if other kind of kontinuation happens!!!
+       //stop  if other kind of continuation happens!!!
        case _ => {
          throw new CESKException("The Kontinuation has excceptainal state!" + k)
        }
@@ -425,9 +425,9 @@ trait ExceptionHandling extends StateSpace with CESKMachinary with StmtForEqual 
                     Statistics.recordEC(buildStForEqual(ijt),buildStForEqual(realN ) )
                    val nxtN =ijt //getProperStmt(ijt, allVals)
                     val newStore = storeUpdate(s, List((fp.offset("exn"), exnValue)))
-                  // One is the original injectthtown , the toher state is the finally
+                  // One is the original inject thrown , the other state is the finally
                  //  Set((PartialState(nxtN, fp, s, kptr, tp), k)) ++ 
-                   Set((PartialState(buildStForEqual(realN ), fp, newStore, kptr, tp), k)) // shoudl the finally get the rest kontinuation.I think so
+                   Set((PartialState(buildStForEqual(realN ), fp, newStore, kptr, tp), k)) // should the finally get the rest kontinuation.I think so
                  }
                  case None => {throw new CESKException("the finally handler is not inthe label table in injectThrown statement inspectStack")}
                }

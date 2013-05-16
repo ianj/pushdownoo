@@ -49,7 +49,7 @@ import scala.collection.immutable.{ Set => ImmSet, Map => ImmMap}
 
 
 class PDCFAAnalysisRunner(opts: AIOptions) extends DalvikCFARunner(opts) 
-										with StackCESKMachinary
+										with StackCESKMachinery
 										with PDCFAGarbageCollector 
 										with IPDSMachinery 
 										with DyckStateGraphMachinery 
@@ -67,11 +67,11 @@ class PDCFAAnalysisRunner(opts: AIOptions) extends DalvikCFARunner(opts)
 
   override type Kont = List[Frame]
 
-  // OK.stil not sure about the switch frames
+  // OK.still not sure about the switch frames
   // but the javascript PDCFA runner will set to be true
   def canHaveSwitchFrames = false
 
-  // neither is the store senseitive
+  // neither is the store sensitive
   def isStoreSensitive(s: ControlState) = true
 
   def step(q: ControlState, k: Kont, frames: Kont, store: SharedStore) = {

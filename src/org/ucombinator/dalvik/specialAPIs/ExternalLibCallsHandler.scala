@@ -1,6 +1,6 @@
 package org.ucombinator.dalvik.specialAPIs
 import org.ucombinator.dalvik.cfa.cesk.StateSpace
-import org.ucombinator.dalvik.cfa.cesk.CESKMachinary
+import org.ucombinator.dalvik.cfa.cesk.CESKMachinery
 import org.ucombinator.dalvik.syntax.Stmt
 import org.ucombinator.dalvik.syntax.{AExp, RegisterExp}
 import org.ucombinator.utils.Debug
@@ -10,7 +10,7 @@ import org.ucombinator.dalvik.exceptionhandling.ExceptionHandling
 import org.ucombinator.dalvik.syntax.StForEqual
 import org.ucombinator.dalvik.preanalysis.LiveRegisterAnalysis
 
-trait ExternalLibCallsHandler extends StateSpace with CESKMachinary with  RawStringLibsAI with ReflectionAI with ExceptionHandling with LiveRegisterAnalysis{
+trait ExternalLibCallsHandler extends StateSpace with CESKMachinery with  RawStringLibsAI with ReflectionAI with ExceptionHandling with LiveRegisterAnalysis{
   def isExternalLibCalls(cls:String) : Boolean = {
     CommonUtils.isStringLibs(cls) || CommonUtils.isMetaLibCall(cls) || APISpecs.isInAPISpecsbyName(cls)
   }

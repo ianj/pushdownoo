@@ -37,44 +37,34 @@ import org.ucombinator.utils.Debug
 
 
 trait IPDSMachinery extends StateSpace with PDCFAGarbageCollector{
-	self: StackCESKMachinary =>
+	self: StackCESKMachinery =>
 	  
 	type Q = ControlState
 	
 	/**
-   * Main iteration function of IPDS
-   *
-   * @param q source control state
-   * @param k a [shallow] continuation to make a next step passed instead of a full stack
-   * @param frames a set of possible frames in the stack at this state (for Garbage Collection)
-   * 
-   * @return a set of paired control states and stack actions
-   */
-	
+	 * Main iteration function of IPDS
+	 *
+	 * @param q source control state
+	 * @param k a [shallow] continuation to make a next step passed instead of a full stack
+	 * @param frames a set of possible frames in the stack at this state (for Garbage Collection)
+	 * 
+	 * @return a set of paired control states and stack actions
+	 */
+
 	def stepIPDS(q: Q, k: List[Frame], frames: List[Frame]): Set[(StackAction[Frame], Q)] = {
-	 
-    val newQ: Q = (if (shouldGC) gc(q, frames) else q)
-     val confs = mnext(newQ, k)
-   
-    for {
-      (q1, k_new) <- confs
-      g = decideStackAction(k, k_new)
-      
-     
-    } yield (g, q1)
-  }
+      val newQ: Q = (if (shouldGC) gc(q, frames) else q)
+	  val confs = mnext(newQ, k)
+
+	  for {
+        (q1, k_new) <- confs
+		g = decideStackAction(k, k_new)
+      } yield (g, q1)
+	}
 
   def decideStackAction(k1: List[Frame], k2: List[Frame]): StackAction[Frame] = (k1, k2) match {
     case (x, y) if x == y => Eps
-    case (h :: t1, t2) if t1 == t2 => {
-      //Debug.prntDebugInfo("pop: ", h)
-     // println("pop: ", h)
-      Pop(h)
-    } 
-    case (t1, h :: t2) if t1 == t2 => {
-   //    println("push: ", h)
-      Push(h)
-    }
+    case (h :: t1, t2) if t1 == t2 => Pop(h)
+    case (t1, h :: t2) if t1 == t2 => Push(h)
     case _ => throw new IPDSException("Continuation par is malfomed:\n" +
       "k1: " + k1.toString + "\n" +
       "k2: " + k2.toString)

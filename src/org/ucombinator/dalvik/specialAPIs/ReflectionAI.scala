@@ -1,13 +1,13 @@
 package org.ucombinator.dalvik.specialAPIs
 
-import org.ucombinator.dalvik.cfa.cesk.CESKMachinary
+import org.ucombinator.dalvik.cfa.cesk.CESKMachinery
 import org.ucombinator.dalvik.cfa.cesk.StateSpace
 import org.ucombinator.dalvik.syntax.Stmt
 import org.ucombinator.dalvik.syntax.AExp
 import org.ucombinator.utils.Debug
 import org.ucombinator.dalvik.syntax.StForEqual
 
-trait ReflectionAI extends StateSpace with CESKMachinary{
+trait ReflectionAI extends StateSpace with CESKMachinery{
 
   
   /**

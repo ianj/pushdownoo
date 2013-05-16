@@ -80,8 +80,6 @@ abstract class DalvikCFARunner(opts: AIOptions) extends AnalysisRunner(opts) wit
     result
   }
   
-  
-  
   /**
    * TODO: compute statistics: singleton, points-to
    */

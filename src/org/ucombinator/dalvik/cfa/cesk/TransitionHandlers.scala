@@ -15,24 +15,10 @@ trait TransitionHandlers extends StateSpace with ExternalLibCallsHandler with Ex
   private def resolveMethod(invokeType: String, oClsName: String, methPath: String, argTypes: List[String]) 
   : List[MethodDef] =  {
     invokeType match {
-      //direct
-      case "direct" => {
-       // println("className:" + oClsName, " methPath: "+ methPath)
-      DalvikClassDef.lookupMethod(oClsName, methPath, argTypes, 1)
-      }
-        // virtual 
-      case "virtual" => {
-      DalvikClassDef.lookupMethod(oClsName, methPath, argTypes, 2)
-      }
-      
-      //interface
-      case "interface" => { 
-        DalvikClassDef.lookUpInterfaceMethod(oClsName, methPath, argTypes)}
-      
-      // super
-      case "super" =>{
-        DalvikClassDef.lookupMethod(oClsName, methPath, argTypes, 4)
-      }
+      case "direct" => DalvikClassDef.lookupMethod(oClsName, methPath, argTypes, 1)
+      case "virtual" => DalvikClassDef.lookupMethod(oClsName, methPath, argTypes, 2)
+      case "interface" => DalvikClassDef.lookUpInterfaceMethod(oClsName, methPath, argTypes)
+      case "super" => DalvikClassDef.lookupMethod(oClsName, methPath, argTypes, 4)
     }
   }
   
@@ -42,7 +28,7 @@ trait TransitionHandlers extends StateSpace with ExternalLibCallsHandler with Ex
       ivkS: AbstractInvokeStmt,
       methPath:String, 
       realN: Stmt,
-      objExp: AExp, // from pattern mathcin
+      objExp: AExp, // from pattern matching
       objAexp: AExp,
       argRegExps: List[AExp],
       ls: Stmt,
@@ -73,8 +59,8 @@ trait TransitionHandlers extends StateSpace with ExternalLibCallsHandler with Ex
             handleExternalLibCalls(methPath, ivkS, argRegExps, objVals, ls, s, realN, fp, kptr, t, tp, k)
           } 
             /**
-          *  we just keep on analysing if the other external libraries that we're not actually interprete it.
-          *  The following branch also includes the calls taht we can get its source
+          *  we just keep on analyzing if the other external libraries that we're not actually interpret it.
+          *  The following branch also includes the calls that we can get its source
           */ else {
             val clsName = StringUtils.getClassPathFromMethPath(methPath) // class name from meth path
             //actually the className can be extracted from the call method Name.
@@ -91,13 +77,12 @@ trait TransitionHandlers extends StateSpace with ExternalLibCallsHandler with Ex
                   stateSet + ((PartialState(buildStForEqual(realN ), fp, s, kptr, tp), k))
                 }
                 case hd :: tl => {
-                  // if more than one method were resovled, we just use the head.
+                  // if more than one method were resolved, we just use the head.
                   //  BUT it is supposed to get only one back
                   //("@InvokeStmt: ", ivkS)
                   /**
                    * Here we're going to inject fault states if there are any, if the method declares throws exceptions
                    */
-                  //println("current found method in invokeStmt:", hd.methodPath)
                   val liveRegs = Stmt.liveMap.getOrElse(buildStForEqual(realN), Set())
                    val injStates = getInjectStatesFromAnnotations( hd.localHandlers, hd.annotationExns, fp, s, k, t, ivkS, "", "", kptr, liveRegs)
                   /**
@@ -114,13 +99,25 @@ trait TransitionHandlers extends StateSpace with ExternalLibCallsHandler with Ex
         }
   }
  
-  def applyMethod(isEntryApply: Boolean, methBody: Stmt, regsNum: BigInt, ovO: Option[ObjectValue], fp: FramePointer, s: Store, k: Kont, argsRegExps: List[AExp], argsTopVal: List[Set[Value]], t: Time, st: Stmt, callerNxtSt: Stmt, kptr: KAddr): Set[Conf] = {
+  def applyMethod(isEntryApply: Boolean,
+		  		  methBody: Stmt,
+		  		  regsNum: BigInt,
+		  		  ovO: Option[ObjectValue],
+		  		  fp: FramePointer,
+		  		  s: Store,
+		  		  k: Kont,
+		  		  argsRegExps: List[AExp],
+		  		  argsTopVal: List[Set[Value]],
+		  		  t: Time,
+		  		  st: Stmt,
+		  		  callerNxtSt: Stmt,
+		  		  kptr: KAddr): Set[Conf] = {
     val tp = tick(List(st), t)
     val calleeBodyStmt = methBody
     val theNext = CommonUtils.findNextStmtNotLineOrLabel(calleeBodyStmt)
-    Debug.prntDebugInfo("@apply method callee's: ", theNext)
     val newFP = fp.push(t, st)
     val funk = new FNKFrame(callerNxtSt, fp)
+    Debug.prntDebugInfo("@apply method callee's: ", theNext)
     Debug.prntDebugInfo("@apply method caller's next: ", callerNxtSt)
 
     if (!isEntryApply) {
@@ -135,12 +132,12 @@ trait TransitionHandlers extends StateSpace with ExternalLibCallsHandler with Ex
       ovO match {
         case Some(ov) => {
           val thisRegum = startingIndex - 1
-          Debug.prntDebugInfo("the new this  reg str: regsnum is" + regsNum + " the argsExp.elgnth," + argsRegExps.length, thisRegum)
           val thisRegStr = StringUtils.constrRegStr(thisRegum)
           val thisRegAddr = newFP.offset(thisRegStr)
-          Debug.prntDebugInfo("the this reg offset is", thisRegAddr)
           val newStore2 = storeUpdate(newStore, List((thisRegAddr, Set(ov))))
           val newState = (PartialState(buildStForEqual(theNext ), newFP, newStore2, kptr, tp), funk :: k)
+          Debug.prntDebugInfo("the new this  reg str: regsnum is" + regsNum + " the argsExp.elgnth," + argsRegExps.length, thisRegum)
+          Debug.prntDebugInfo("the this reg offset is", thisRegAddr)
           Set(newState)
         }
         case None => Set((PartialState(buildStForEqual(theNext ), newFP, newStore, kptr, tp), funk :: k))
@@ -178,9 +175,19 @@ trait TransitionHandlers extends StateSpace with ExternalLibCallsHandler with Ex
    * which means that the val for all the numerical operations is condensed to NumTop
    *
    */
-  def applyAtomicOp(opCode: SName, opCodeType: String, lineNo: Stmt, destReg: RegisterExp, aExps: List[AExp], s: Store, nxt: Stmt, fp: FramePointer, kptr: KAddr, tp: Time, k: Kont): Set[Conf] = {
+  def applyAtomicOp(opCode: SName,
+		  			opCodeType: String,
+		  			lineNo: Stmt,
+		  			destReg: RegisterExp,
+		  			aExps: List[AExp],
+		  			s: Store,
+		  			nxt: Stmt,
+		  			fp: FramePointer,
+		  			kptr: KAddr,
+		  			tp: Time,
+		  			k: Kont): Set[Conf] = {
 
-    Debug.prntDebugInfo("@Applyautomatic Sname:  " + opCode.toString() + ":destREgExp:" + destReg + "The destAddress is: ", fp.offset(destReg.regStr))
+    Debug.prntDebugInfo("@Applyatomic Sname:  " + opCode.toString() + ":destREgExp:" + destReg + "The destAddress is: ", fp.offset(destReg.regStr))
     opCodeType match {
       case "number" =>
         { val absValue = 
@@ -209,12 +216,12 @@ trait TransitionHandlers extends StateSpace with ExternalLibCallsHandler with Ex
                 // no change to the values we go on
                 Set((PartialState(buildStForEqual(nxt), fp, s, kptr, tp), k))
               } else { // should probably be a class name defined? or library class?
-                // we strong udpate to get new one usually the case do strong udpate
+                // we strong update to get new one usually the case do strong update
                 val newOP = ObjectPointer(tp, clsName, lineNo)
                 val objVal = ObjectValue(newOP, clsName)
 
                 val newStore = storeStrongUpdate(s, List((fp.offset(destReg.regStr), Set(objVal))))
-                // initialize the fields of the currnet class and return new store?
+                // initialize the fields of the current class and return new store?
                 val newStore2 = initObject(castTypeStr, newStore, newOP)
                 val newState = (PartialState(buildStForEqual(nxt), fp, newStore2, kptr, tp), k)
                 Set(newState)

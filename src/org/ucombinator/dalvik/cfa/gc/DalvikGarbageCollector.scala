@@ -12,19 +12,14 @@ trait DalvikGarbageCollector extends StateSpace with GarbageCollectorTrait {
     case ErrorState(_, _) | FinalState() => c
     case PartialState(st, fp, store, kptr,  t) => {
       val livingAddrs = reachable(c, frames)
-      
-      
-      val cleanStore = store.filter {
-        case (a, _) => livingAddrs.contains(a)
-      }
+      val cleanStore = store.filter { case (a, _) => livingAddrs.contains(a) }
       PartialState(st, fp, cleanStore, kptr, t)
     }
   }
   
   def reachable(c: ControlState, frames : Kont) : Set [Addr] = {
     val rootAddresses: Set[Addr] = getRootAddrs(c, frames)
-   
-    
+
     c match{
       case ErrorState(_, _) | FinalState() => Set.empty
       case PartialState(st, fp, store, kprt, t) => {
@@ -106,7 +101,7 @@ trait DalvikGarbageCollector extends StateSpace with GarbageCollectorTrait {
            val oop = iop.asInstanceOf[ObjectPointer]
            if (op == oop) {
                res + kv._1
-           }else res
+           } else res
          }
          case _ => res
        }
@@ -119,30 +114,18 @@ trait DalvikGarbageCollector extends StateSpace with GarbageCollectorTrait {
   * reach to all the object field address along with register addr
   */
   def collectAdjacentAddrs (prevAddrs: Set[Addr], s: Store) : Set[Addr] ={
-    val filterStore = s.filter {
-      case (a, vals) => prevAddrs.contains(a)
-    }
+    val filterStore = s.filter { case (a, vals) => prevAddrs.contains(a) }
     
     Debug.prntDebugInfo("Before Store is" + s, "the filter store is"+ filterStore)
     
-    val filterFlattenedVals = filterStore.flatMap {
-      case (a, vals) => vals
-    }
-    
+    val filterFlattenedVals = filterStore.flatMap { case (a, vals) => vals }
     val reachedObjVals = filterFlattenedVals.filter {
         case ObjectValue(op, clsName) => true
         case _ => false
     }.toSet
     
-    val reachedOps = reachedObjVals.map {
-      (v: Value) => v match {
-        case ObjectValue(op, clsName) => op 
-      }
-    }
-    
-    val newAddrs : Set[Addr] = reachedOps.flatMap {
-      op => AddrsofCurOP(op, s)
-    }
+    val reachedOps = reachedObjVals.map { case ObjectValue(op, clsName) => op }
+    val newAddrs : Set[Addr] = reachedOps.flatMap { op => AddrsofCurOP(op, s) }
     
     if(newAddrs subsetOf prevAddrs) {
       Debug.prntDebugInfo("the newAddrs are" + newAddrs, "the previous addrs are" + prevAddrs)

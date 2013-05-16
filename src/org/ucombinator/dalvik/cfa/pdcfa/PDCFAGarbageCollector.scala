@@ -11,20 +11,16 @@ import org.ucombinator.dalvik.syntax.AssignAExpStmt
 import org.ucombinator.dalvik.syntax.AtomicOpExp
 
 
-trait PDCFAGarbageCollector extends DalvikGarbageCollector with StackCESKMachinary with StmtForEqual {
+trait PDCFAGarbageCollector extends DalvikGarbageCollector with StackCESKMachinery with StmtForEqual {
   
    def getRootAddrs(c: ControlState, frames: List[Frame]): Set[Addr] = {
      
     val  addrsOfStateFP = c match {
        case ErrorState(_,_) | FinalState() => Set.empty
        case ps@PartialState(StForEqual(stmt, nxss, lss, clsP, methP), curFP, store, kptr, t) => {
-         //getAddrsofCurFP(curFP, store)
-         //turn to the following!!
          val curFPAddrs = getAddrsofCurFP(curFP, store)
-         
         
-         if(doLRA) {
-           
+         if(doLRA) {           
             filterLiveRegAddrs(ps.st, curFPAddrs)}
          else curFPAddrs
        }
@@ -33,11 +29,7 @@ trait PDCFAGarbageCollector extends DalvikGarbageCollector with StackCESKMachina
     val stackAddrs : Set[Addr] = c match {
        case ErrorState(_,_) | FinalState() => Set.empty
        case PartialState(stmt, curFP, store, kptr, t) => {
-          frames.foldLeft(Set[Addr]())((res: Set[Addr], f: Frame) => {
-            val sf = getRootAddrsFromStack(f,store)
-          
-            res ++ sf
-            })
+          frames.foldLeft(Set[Addr]())((res: Set[Addr], f: Frame) => res ++ getRootAddrsFromStack(f,store))
           }
      }
      addrsOfStateFP ++ stackAddrs
@@ -45,10 +37,11 @@ trait PDCFAGarbageCollector extends DalvikGarbageCollector with StackCESKMachina
    
     def filterLiveRegAddrs(st: StForEqual, addrs: Set[Addr]) : Set[Addr] = {
    //   val stStr = CommonUtils.constrDistinctStatementStr(st)
-      val liveRegs = Stmt.liveMap(st )
+      val liveRegs = Stmt.liveMap(st)
       
       addrs.filter{
          case RegAddr(ifp, offs) => { liveRegs.contains(offs) }
+         case _ => false
       }
    }
 }

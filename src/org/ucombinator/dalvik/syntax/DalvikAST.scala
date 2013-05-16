@@ -11,7 +11,11 @@ import org.ucombinator.utils.Debug
  * AExp ::= BooleanExp(bool) | StringLitExp(str) | CharLitExp(char) | IntExp(int)
  *        | VoidExp | ThisExp | NullExp | RegisterExp(name) | AtomicOpExp(name, AExp ...)
  *        | InstanceOfExp | StaticFieldExp(field-path, type) | NonStaticFieldExp(AExp, field-path, type)
- * Stmt ::= IfStmt(AExp, ???) | SwitchStmt(???) | AssignAExpStmt(AExp, AExp, ???) | more...
+ * Stmt ::= IfStmt(AExp, ???) | SwitchStmt(???) | AssignAExpStmt(AExp, AExp, ???)
+ *        | LabelStmt | LineStmt | NopStmt | GotoStmt | NewStmt | FieldAssignStmt | InvokeStmt 
+ *        | InvokeSuperStmt | InvokeInterfaceStmt | InvokeDirectStmt | ReturnStmt
+ *        | PushHandlerStmt | PopHandlerStmt | FaultInjectorStmt | ThrowStmt | MoveExceptionStmt | CatchStmt
+ *        
  */
 
 
@@ -20,7 +24,7 @@ sealed abstract class AExp
 /* Literal expressions */
 
 case class BooleanExp(sb: SBoolean) extends AExp {
-  def value = sb.toString()
+  def value = sb.value
 }
 
 case class StringLitExp(ss: SText) extends AExp {
@@ -89,9 +93,10 @@ case class DalvikRefVar(val name: SName) extends AExp {
   lazy val mutables: ImmSet[SName] = ImmSet()
 }
 
-  case class StForEqual(oldStyleSt: Stmt, nextSt: Stmt, clsPath: String, methPath:String, lineSt: Stmt) {
-    override def toString = oldStyleSt.toString
-  }
+/* Ian: What is this for? */
+case class StForEqual(oldStyleSt: Stmt, nextSt: Stmt, clsPath: String, methPath:String, lineSt: Stmt) {
+	override def toString = oldStyleSt.toString
+}
   
 abstract class Stmt  {
   def next: Stmt
@@ -101,10 +106,10 @@ abstract class Stmt  {
   def lineNumber_=(stmt : Stmt )
   
   def clsPath: String
-   def clsPath_=(str : String )
+  def clsPath_=(str : String )
    
-     def methPath: String
-   def methPath_=(str : String )
+  def methPath: String
+  def methPath_=(str : String )
 
   def refRegsStrSet : Set[String]  
   def defRegsStrSet: Set[String]
@@ -128,47 +133,39 @@ case class LabelStmt(lbl: String, nxt: Stmt, lineStmt: Stmt, clsP : String, meth
   def label: String = lbl
   var next: Stmt = nxt
   var lineNumber: Stmt = lineStmt
-  
   var methPath = methP
   var clsPath = clsP
   
-   def register(label: String) {
-    Stmt.stmtMap += (label -> this)}
-  //Stmt.register(lbl, this)
+  def register(label: String) { Stmt.stmtMap += (label -> this) }
   
   override def toString() = "LabelStmt(" + lbl + "," +   ")" + lineNumber
   
-  def refRegsStrSet : Set[String] = {
-    Set()
-  }
-  
-  def defRegsStrSet: Set[String] ={Set()}
+  def refRegsStrSet : Set[String] = { Set() }
+  def defRegsStrSet: Set[String] = { Set() }
 }
 
 case class LineStmt(lnstr : String, nxt: Stmt, ln: Stmt, clsP : String, methP : String) extends Stmt  {
   def linenumber = lnstr
   var next: Stmt = nxt
-    var lineNumber = ln
-    override def toString() = "LineStmt(" + lnstr + ")" 
-     def refRegsStrSet : Set[String] = {
-    Set()
-  }
-    var methPath = methP
+  var lineNumber = ln
+  var methPath = methP
   var clsPath = clsP
   
+  override def toString() = "LineStmt(" + lnstr + ")" 
+
+  def refRegsStrSet : Set[String] = { Set() }
   def defRegsStrSet: Set[String] ={Set()}
 }
 
 case class NopStmt(nxt: Stmt, ln: Stmt, clsP: String, methP: String) extends Stmt   {
   var next = nxt
   var lineNumber = ln
-  override def toString() = "NopStmt(" +  ")" + lineNumber
-  def refRegsStrSet: Set[String] = {
-    Set()
-  }
-    var methPath = methP
+  var methPath = methP
   var clsPath = clsP
 
+  override def toString() = "NopStmt(" +  ")" + lineNumber
+
+  def refRegsStrSet: Set[String] = { Set() }
   def defRegsStrSet: Set[String] = { Set() }
 }
 
@@ -176,34 +173,29 @@ case class GotoStmt(lbl: String, nxt: Stmt, ln: Stmt, clsPPath: String, methPPat
   def label = lbl
   var next = nxt
   var lineNumber = ln
-  override def toString() = "GotoStmt(" + lbl + "," +  ")" + lineNumber
-  def refRegsStrSet: Set[String] = {
-    Set()
-  }
-    var methPath = this.methPPath
+  var methPath = this.methPPath
   var clsPath = clsPPath
 
+  override def toString() = "GotoStmt(" + lbl + "," +  ")" + lineNumber
+
+  def refRegsStrSet: Set[String] = { Set() }
   def defRegsStrSet: Set[String] = { Set() }
 }
 
 // 
  object StmtNil  extends Stmt {
   def next = throw new Exception("no more stmt")
-  def next_=(st: Stmt) { throw new ParsingExpcetion("can't change next on null stmt") }
-  def lineNumber = throw new ParsingExpcetion("no line stmt")
-  def lineNumber_=(st: Stmt) { throw new ParsingExpcetion("can't change linenumber on null stmt") }
+  def next_=(st: Stmt) { throw new ParsingException("can't change next on null stmt") }
+  def lineNumber = throw new ParsingException("no line stmt")
+  def lineNumber_=(st: Stmt) { throw new ParsingException("can't change linenumber on null stmt") }
   
-    def methPath = ""
-      def methPath_=(st: String) {}
-    def clsPath = ""
-      def clsPath_=(st: String) {}
+  def methPath = ""
+		  def methPath_=(st: String) {}
+  def clsPath = ""
+		  def clsPath_=(st: String) {}
   
-  def refRegsStrSet: Set[String] = {
-    Set()
-  }
-
+  def refRegsStrSet: Set[String] = { Set() }
   def defRegsStrSet: Set[String] = { Set() }
-
 }
 
 
@@ -213,32 +205,22 @@ case class NewStmt(destReg: SName ,clsName: String, nxt: Stmt, ls: Stmt, clsP: S
   
   var next = nxt
   var lineNumber = ls
-  
   var clsPath = clsP
   var methPath = methP
   
-  override def toString() = "NewStmt(" + destReg + ","+ clsName + ","+  lineNumber+  ")" 
+  override def toString() = f"NewStmt($destReg, $clsName, $lineNumber)" 
   
   def getFieldStrs (clsName: String) : List[(String,String)] = {
     val clsDefO = DalvikClassDef.forName(clsName)
     Debug.prntDebugInfo("The New Stmt's class: ", clsDefO)
     clsDefO match {
-      case Some(cd) => {
-        cd.getAllFields
-      }
-      case None => {
-        List()
-      }
+      case Some(cd) => { cd.getAllFields }
+      case None => List()
     }
   }
   
-   def refRegsStrSet : Set[String] = {
-    Set()
-  }
-  
-   def defRegsStrSet: Set[String] ={
-    Set(destReg.toString())
-   }
+   def refRegsStrSet : Set[String] = Set()
+   def defRegsStrSet: Set[String] = Set(destReg.toString())
 }
 
 case class IfStmt(condExp: AExp, sucLabel: String, nxt: Stmt, ls: Stmt, clsP: String, methP: String) extends Stmt {
@@ -248,13 +230,11 @@ case class IfStmt(condExp: AExp, sucLabel: String, nxt: Stmt, ls: Stmt, clsP: St
   def succLabel = sucLabel
     var clsPath = clsP
   var methPath = methP
-  override def toString() = "IfStmt(" + condExp + "," + sucLabel + "," + lineNumber + ")"
+  override def toString() = f"IfStmt($condExp, $sucLabel, $lineNumber)"
   
   def refRegsStrSet: Set[String] = {
     condExp match {
-      case re@RegisterExp(_) => {
-        Set( re.regStr)
-      }
+      case re@RegisterExp(_) => { Set( re.regStr) }
       
       case aoe@AtomicOpExp(if2,  aExps @ _*) => {
         val operatorAes = aoe.ops.toList
@@ -263,9 +243,7 @@ case class IfStmt(condExp: AExp, sucLabel: String, nxt: Stmt, ls: Stmt, clsP: St
     }
   }
 
-  def defRegsStrSet: Set[String] = {
-    Set()
-  }
+  def defRegsStrSet: Set[String] = { Set() }
 }
 
 case class SwitchStmt(testExp: AExp, offset: String, labels: List[AExp],   nxt: Stmt, ls: Stmt, clsP: String, methP: String) extends Stmt {
@@ -273,10 +251,10 @@ case class SwitchStmt(testExp: AExp, offset: String, labels: List[AExp],   nxt: 
   var lineNumber = ls
     var clsPath = clsP
   var methPath = methP
-  override def toString() = "Packed/SparseSwitch(" + testExp + "," + offset + ","  + lineNumber +")" 
+  override def toString() = f"Packed/SparseSwitch($testExp, $offset, $lineNumber)" 
   
   /**
-   * with the label, nop and StmtNil Line stmt escaped and the one not escaped for convinience
+   * with the label, nop and StmtNil Line stmt escaped and the one not escaped for convenience
    */
   def getBranchStmts : (List[Stmt], List[Stmt]) = {
         val sExps = 
@@ -293,38 +271,31 @@ case class SwitchStmt(testExp: AExp, offset: String, labels: List[AExp],   nxt: 
             
              Stmt.forLabel(ls)
          })
-      val stmtS=  stmtOs filter ((os : Option[Stmt]) => { 
+      val stmtS =  stmtOs filter ((os : Option[Stmt]) => { 
            os match {
-           case Some(s) => true
-           case None => false
-           }
-         })
+           	case Some(s) => true
+           	case None => false
+           }})
         
-        val stmtNoE =  stmtS map ((s) => {
-           s match {
-             case Some(s) => s.next
-           }
-         })
+      val stmtNoE = stmtS map ((s) => {
+    	  s match {
+    	  	case Some(s) => s.next
+    	  }})
         
-         val stmtE =  stmtS map ((s) => {
-           s match {
-             case Some(s) => CommonUtils.findNextStmtNotLineOrLabel(s.next)
-           }
-         })
+      val stmtE =  stmtS map ((s) => {
+    	  s match {
+    	  	case Some(s) => CommonUtils.findNextStmtNotLineOrLabel(s.next)
+    	  }})
         (stmtE, stmtNoE)
   }
   
    def refRegsStrSet : Set[String] = {
     testExp match {
-      case ae@RegisterExp(_) => {
-        Set(ae.regStr)
-      }
+      case ae@RegisterExp(_) => Set(ae.regStr)
     }
   }
   
-   def defRegsStrSet: Set[String] ={
-    Set()
-   }
+   def defRegsStrSet: Set[String] = Set()
 }
 
 case class AssignAExpStmt(lhReg: AExp, rhExp: AExp, nxt: Stmt, ls : Stmt, clsP: String, methP: String) extends Stmt {
@@ -341,26 +312,18 @@ case class AssignAExpStmt(lhReg: AExp, rhExp: AExp, nxt: Stmt, ls : Stmt, clsP: 
 
   private def getSuitableRefStrsSet: Set[String] = {
     rhExp match {
-      case re@RegisterExp(sv) => { // should be move-result
-        Set(re.regStr)
-      }
+      // should be move-result
+      case re@RegisterExp(sv) => Set(re.regStr)
       case AtomicOpExp(opCode, aExps @ _*) => {
         CommonUtils.getRegStrsListFromAExpList(aExps.toList)
       }
       // otherwise, it will be in the aExps
-      case _ => throw new Exception("@getSuitableRefStrsSet: ASsignAexpStmt: right hand side can't be RegisterExp and AutomicOpExp" + rhExp.toString())
+      case _ => throw new Exception(f"@getSuitableRefStrsSet: ASsignAexpStmt: right hand side can't be RegisterExp and AutomicOpExp ${rhExp.toString()}")
     }
   }
   
-  
-  def refRegsStrSet : Set[String] = {
-    getSuitableRefStrsSet
-  }
-  
-   def defRegsStrSet: Set[String] ={
-     CommonUtils.getRegStrsFromAExp(lhReg)
-   }
-
+  def refRegsStrSet : Set[String] = getSuitableRefStrsSet
+  def defRegsStrSet: Set[String] = CommonUtils.getRegStrsFromAExp(lhReg)
 }
 
 // isn;t like the assignAExp? but simplify to match anyway
@@ -384,20 +347,14 @@ case class FieldAssignStmt(lhr: AExp, fe: AExp, nxt: Stmt, ls: Stmt , clsP: Stri
     fe match {
       case nonStFE @ NonStaticFieldExp(or, fp, ft) => {
         lhr match { // iget
-          case re @ RegisterExp(_) => {
-            val res = CommonUtils.getRegStrsFromAExp(or)
-          
-            res 
-          }
+          case re @ RegisterExp(_) => CommonUtils.getRegStrsFromAExp(or)
           case _ => { throw new Exception("@refRegsStrSet: cant be anything else") }
         }
       }
       //sget
       case sfe @ StaticFieldExp(fp, ft) => {
         lhr match { // sget
-          case re @ RegisterExp(_) => {
-            Set()
-          }
+          case re @ RegisterExp(_) => Set()
           case _ => { throw new Exception("@refRegsStrSet: cant be anything else") }
         }
       }
@@ -409,9 +366,7 @@ case class FieldAssignStmt(lhr: AExp, fe: AExp, nxt: Stmt, ls: Stmt , clsP: Stri
               CommonUtils.getRegStrsFromAExp(fe)
           }
           //sput
-          case sfe @ StaticFieldExp(fp, ft) => {
-            CommonUtils.getRegStrsFromAExp(fe)
-          }
+          case sfe @ StaticFieldExp(fp, ft) => CommonUtils.getRegStrsFromAExp(fe)
         }
       }
     }
@@ -420,24 +375,16 @@ case class FieldAssignStmt(lhr: AExp, fe: AExp, nxt: Stmt, ls: Stmt , clsP: Stri
   def defRegsStrSet: Set[String] = {
     fe match {
       // iget
-      case nonStFE @ NonStaticFieldExp(or, fp, ft) => {
-        CommonUtils.getRegStrsFromAExp(lhr)
-      }
+      case nonStFE @ NonStaticFieldExp(or, fp, ft) => { CommonUtils.getRegStrsFromAExp(lhr) }
       //sget
-      case sfe @ StaticFieldExp(fp, ft) => {
-        CommonUtils.getRegStrsFromAExp(lhr)
-      }
+      case sfe @ StaticFieldExp(fp, ft) => { CommonUtils.getRegStrsFromAExp(lhr) }
       
         // iput or sput
       case re @ RegisterExp(_) => {
         lhr match {
-          case nonStFE @ NonStaticFieldExp(or, fp, ft) => {
-             Set()
-          }
+          case nonStFE @ NonStaticFieldExp(or, fp, ft) => Set()
           //sput
-          case sfe @ StaticFieldExp(fp, ft) => {
-             Set()
-          }
+          case sfe @ StaticFieldExp(fp, ft) => Set()
         }
       }
     }
@@ -458,16 +405,12 @@ case class InvokeStmt(methPathStr: String, argRegAExp: List[AExp], objAExp: AExp
   extends AbstractInvokeStmt(methPathStr, argRegAExp, tyStrs, clsP, methP) {
   var next = nxt
   var lineNumber = ls
-    var clsPath = clsP
+  var clsPath = clsP
   var methPath = methP
   def objectAExp = objAExp
-  override def toString = "InvokeStmt:" + methPathStr + "("+ argRegAExp + " , "+ objAExp + " , "+ 
-  tyStrs +  ")" + lineNumber
+  override def toString = f"InvokeStmt: $methPathStr ($argRegAExp, $objAExp, $tyStrs) $lineNumber"
   
-  def refRegsStrSet: Set[String] = {
-    CommonUtils.getRegStrsListFromAExpList(objAExp :: argRegAExp)
-  }
-
+  def refRegsStrSet: Set[String] = CommonUtils.getRegStrsListFromAExpList(objAExp :: argRegAExp)
   def defRegsStrSet: Set[String] = { Set() }
 }
 
@@ -475,15 +418,12 @@ case class InvokeSuperStmt(methPathStr: String, argRegAExp: List[AExp], objAExp:
   extends AbstractInvokeStmt(methPathStr, argRegAExp, tyStrs, clsP, methP) {
   var next = nxt
   var lineNumber = ls
-      var clsPath = clsP
+  var clsPath = clsP
   var methPath = methP
   def objectAExp = objAExp
-  override def toString = "InvokeSuperStmt: " + methPathStr + "("+ argRegAExp + " , "+ objAExp + " , "+ tyStrs +   ")" + lineNumber
+  override def toString = f"InvokeSuperStmt: $methPathStr($argRegAExp , $objAExp , $tyStrs)$lineNumber"
   
-  def refRegsStrSet: Set[String] = {
-    CommonUtils.getRegStrsListFromAExpList(objAExp :: argRegAExp)
-  }
-
+  def refRegsStrSet: Set[String] = CommonUtils.getRegStrsListFromAExpList(objAExp :: argRegAExp)
   def defRegsStrSet: Set[String] = { Set() }
 }
 
@@ -494,12 +434,9 @@ case class InvokeInterfaceStmt(methPathStr: String, argRegAExp: List[AExp], objA
       var clsPath = clsP
   var methPath = methP
   def objectAExp = objAExp
-  override def toString = "InvokeInterfaceStmt:"   + methPathStr + "("+ argRegAExp + " , "+ objAExp + " , "+ tyStrs +   ")" + lineNumber
+  override def toString = f"InvokeInterfaceStmt: $methPathStr($argRegAExp , $objAExp , $tyStrs)$lineNumber"
   
-  def refRegsStrSet: Set[String] = {
-    CommonUtils.getRegStrsListFromAExpList(objAExp :: argRegAExp)
-  }
-
+  def refRegsStrSet: Set[String] = CommonUtils.getRegStrsListFromAExpList(objAExp :: argRegAExp)
   def defRegsStrSet: Set[String] = { Set() }
 }
 
@@ -509,13 +446,10 @@ case class InvokeStaticStmt(methPathStr: String, argRegAExp: List[AExp], tyStrs:
   var next = nxt
  // def objectAExp = objAExp
   var lineNumber = ls
-      var clsPath = clsP
+  var clsPath = clsP
   var methPath = methP
-   override def toString = "InvokeStaticStmt:"+ methPathStr + "(" + argRegAExp  +  " " +  tyStrs +   ")" + lineNumber
-   def refRegsStrSet: Set[String] = {
-    CommonUtils.getRegStrsListFromAExpList( argRegAExp)
-  }
-
+  override def toString = f"InvokeStaticStmt: $methPathStr($argRegAExp $tyStrs)$lineNumber"
+  def refRegsStrSet: Set[String] = CommonUtils.getRegStrsListFromAExpList( argRegAExp)
   def defRegsStrSet: Set[String] = { Set() }
 }
 
@@ -523,34 +457,26 @@ case class InvokeDirectStmt(methPathStr: String, argRegAExp: List[AExp], objAExp
   extends AbstractInvokeStmt(methPathStr, argRegAExp, tyStrs, clsP, methP) {
   var next = nxt
   var lineNumber = ls
-      var clsPath = clsP
+  var clsPath = clsP
   var methPath = methP
   def objectAExp = objAExp
-  override def toString = "InvokeDirectStmt: " + methPathStr + " ( "+ objAExp  + " , "+ argRegAExp + ","+ tyStrs + ")" + lineNumber
+  override def toString = f"InvokeDirectStmt: $methPathStr($objAExp, $argRegAExp, $tyStrs)$lineNumber"
   
-   def refRegsStrSet: Set[String] = {
-    CommonUtils.getRegStrsListFromAExpList(objAExp :: argRegAExp)   
-  }
-
+  def refRegsStrSet: Set[String] = CommonUtils.getRegStrsListFromAExpList(objAExp :: argRegAExp)
   def defRegsStrSet: Set[String] = { Set() }
-
 }
 
 case class ReturnStmt(resultAe: AExp, nxt: Stmt, ls: Stmt, clsP: String, methP: String) extends Stmt {
   var next = nxt
   def result = resultAe
   var lineNumber = ls
-  
-      var clsPath = clsP
+  var clsPath = clsP
   var methPath = methP
-  override def toString = "Return:" + resultAe +  ")" + lineNumber
+  override def toString = f"Return: $resultAe)$lineNumber"
 
   def refRegsStrSet: Set[String] = {
     resultAe match {
-      case ae @ RegisterExp(_) => {
-        if (ae.regStr == "") Set()
-        else Set(ae.regStr)
-      }
+      case ae @ RegisterExp(_) => { if (ae.regStr == "") Set() else Set(ae.regStr) }
       case _ => { throw new Exception(" exception from getRegStrsFromAExp: not a RegisterExp, Found:" + resultAe.toString) }
     }
   }
@@ -561,55 +487,40 @@ case class ReturnStmt(resultAe: AExp, nxt: Stmt, ls: Stmt, clsP: String, methP: 
 // includes the object 
 //case class FieldAssginment extends Stmt
 
-
 // the exnHandler is supposed to be singletonList
 case class PushHandlerStmt(typeString: String, clsName: String, lbl: String, timetoFork: Boolean, exnHandlers: List[ExceptionHandlers],   exnAnno: List[String], nxt: Stmt, ls: Stmt, clsP: String, methP: String) extends Stmt {
   var next = nxt
   def className = clsName
   def label = lbl
   var lineNumber = ls
-  
-      var clsPath = clsP
+  var clsPath = clsP
   var methPath = methP
   
-  override def toString =  "PushHandlerStmt(" + clsName+ "," +lbl+ "," +  ")" + lineNumber
-  
-    def refRegsStrSet: Set[String] = {
-    Set()
-  }
-
+  override def toString =  f"PushHandlerStmt($clsName, $lbl)$lineNumber"  
+  def refRegsStrSet: Set[String] = { Set() }
   def defRegsStrSet: Set[String] = { Set() }
 }
 
 case class PopHandlerStmt(exnType: String, nxt: Stmt, ls: Stmt, clsP: String, methP: String) extends Stmt {
   var next = nxt
   var lineNumber = ls
-  override def toString =  "PopHandlerStmt(" + exnType +  ")" + lineNumber
-  
-      var clsPath = clsP
+  var clsPath = clsP
   var methPath = methP
   
-  def refRegsStrSet: Set[String] = {
-    Set()
-  }
-
+  override def toString =  f"PopHandlerStmt($exnType)$lineNumber"
+  def refRegsStrSet: Set[String] = { Set() }
   def defRegsStrSet: Set[String] = { Set() }
 }
 
 case class FaultInjectorStmt(exnHandlers: ExceptionHandlers, exnAnnos: List[String], nxt: Stmt, ls: Stmt, clsP: String, methP: String) extends Stmt {
   var next = nxt
-  var lineNumber = ls
-  override def toString = "FaultInjectorStmt: " +  " " + lineNumber
-
-  def refRegsStrSet: Set[String] = {
-    Set()
-  }
-  
-      var clsPath = clsP
+  var lineNumber = ls  
+  var clsPath = clsP
   var methPath = methP
 
+  override def toString = f"FaultInjectorStmt: $lineNumber"
+  def refRegsStrSet: Set[String] = { Set() }
   def defRegsStrSet: Set[String] = { Set() }
-
 }
 
 
@@ -617,15 +528,11 @@ case class ThrowStmt(exn: AExp, nxt: Stmt, ls: Stmt, clsP: String, methP: String
   var next = nxt
   var lineNumber = ls
   def exeption = exn
-  override def toString =  "ThrowStmt(" + exn  +  ")" + lineNumber
-  
-  
-      var clsPath = clsP
+  var clsPath = clsP
   var methPath = methP
-  def refRegsStrSet: Set[String] = {
-    CommonUtils.getRegStrsFromAExp(exn)
-  }
- 
+  
+  override def toString = f"ThrowStmt($exn)$lineNumber"
+  def refRegsStrSet: Set[String] = CommonUtils.getRegStrsFromAExp(exn)
   def defRegsStrSet: Set[String] = { Set("exn") }
 }
 
@@ -633,19 +540,12 @@ case class MoveExceptionStmt(nameReg: AExp, nxt: Stmt, ls: Stmt, clsP: String, m
   var next = nxt
   var lineNumber = ls
   def nameAexp = nameReg
-  
-      var clsPath = clsP
+  var clsPath = clsP
   var methPath = methP
-  override def toString =  "MoveExceptionStmt(" + nameReg  +  ")" + lineNumber
+  override def toString = f"MoveExceptionStmt($nameReg)$lineNumber"
   
-  def refRegsStrSet: Set[String] = {
-    Set("exn")
-  }
-
-  def defRegsStrSet: Set[String] = { 
-    CommonUtils.getRegStrsFromAExp(nameReg)
-  }
-  
+  def refRegsStrSet: Set[String] = { Set("exn") }
+  def defRegsStrSet: Set[String] = CommonUtils.getRegStrsFromAExp(nameReg)
 }
 
 case class CatchStmt(typeStr: String, exnTy: String, fromLblStr: String, toLblStr: String, usingLblStr: String, nxt: Stmt, ls: Stmt, clsP: String, methP: String) extends Stmt {
@@ -655,13 +555,11 @@ case class CatchStmt(typeStr: String, exnTy: String, fromLblStr: String, toLblSt
   def using = usingLblStr
   var next = nxt
   var lineNumber = ls
-      var clsPath = clsP
+  var clsPath = clsP
   var methPath = methP
-  override def toString =  "CatchStmt(" + typeStr + ","+ exnTy + "," + fromLblStr  + "," + toLblStr  + ")" + lineNumber
-  def refRegsStrSet: Set[String] = {
-    Set()
-  }
-
+  
+  override def toString = f"CatchStmt($typeStr, $exnTy, $fromLblStr, $toLblStr)$lineNumber"
+  def refRegsStrSet: Set[String] = { Set() }
   def defRegsStrSet: Set[String] = { Set() }
 }
 
@@ -669,16 +567,14 @@ case class CompactMethodIndex(methPath: String, argsTypes: List[String]) {
   def methodPath = methPath
   def argTypes = argsTypes
   
-   override def toString = methPath + " " + argsTypes.toString()
-   override def hashCode = 41 *  methPath.hashCode() + argsTypes.hashCode()
-   override def equals(other: Any) = other match {
-      case that : CompactMethodIndex => //(that canEqual this) && 
-      								(this.methodPath == that.methodPath) && (this.argTypes == that.argTypes)
-      case _ => false
-    }
+  override def toString = methPath + " " + argsTypes.toString()
+  override def hashCode = 41 *  methPath.hashCode() + argsTypes.hashCode()
+  override def equals(other: Any) = other match {
+  	case that : CompactMethodIndex => //(that canEqual this) && 
+  		(this.methodPath == that.methodPath) && (this.argTypes == that.argTypes)
+  	case _ => false
+  }
    // override def canEqual(other: Any) = other.isInstanceOf[CompactMethodIndex]
-   
-   
 }
 
 
@@ -710,38 +606,31 @@ case class DalvikClassDef(
     mt
   }
   
-  def getFieldPathStrs () : List[String] = {
-   this.fields map (_.fieldPath)
-  }
+  def getFieldPathStrs () : List[String] = { this.fields map (_.fieldPath) }
   
-  private def isClintMeth(md: MethodDef) : Boolean ={
-      val attrs = md.attrs
-      val methName = md.methodPath
-      if(attrs.contains("static") && methName.contains("<clinit>") && (!attrs.contains("private")) ) true
-      else false
-    }
+  private def isClintMeth(md: MethodDef) : Boolean = {
+    val attrs = md.attrs
+    val methName = md.methodPath
+    attrs.contains("static") && methName.contains("<clinit>") && (!attrs.contains("private"))
+  }
   
   // singleton if found
-  def getClassConstrctorMethDef : List[MethodDef] ={
-    this.methods filter isClintMeth
-  }
+  def getClassConstrctorMethDef : List[MethodDef] = { this.methods filter isClintMeth }
   
   /**
    * Get all the inheritable fields
    */
   def getInheritableFieldPathTypeStrs : List[(String, String)] ={
     this.fields.foldLeft(List[(String, String)]()) ((res, fieldDef: FieldDef) => {
-      if(fieldDef.attrs.contains("private") || fieldDef.attrs.contains("static") ){
+      if(fieldDef.attrs.contains("private") || fieldDef.attrs.contains("static")) {
         res
-      }else {
-        (fieldDef.fieldPath, fieldDef.fieldType) :: res
-      }
+      } else { (fieldDef.fieldPath, fieldDef.fieldType) :: res }
     })
   }
   
   /*** 
    * to get the fields include all the inherited ones
-   * BugFix: the fields in the curnet class shold not exclude private ones
+   * BugFix: the fields in the current class should not exclude private ones
    * */
   def getAllFields : List[(String, String)] ={
     val superdefs = getSupers(List())(this.superName);
@@ -753,8 +642,7 @@ case class DalvikClassDef(
   }
   
   def getCurrentInstanceFields: List[(String, String)] = {
-    val all = this.fields
-    val fall = all.filter(! _.attrs.contains("static"))
+    val fall = this.fields.filterNot(_.attrs.contains("static"))
     fall.map((fd) => (fd.fieldPath, fd.fieldType))
   }
   
@@ -774,10 +662,8 @@ case class DalvikClassDef(
     for(fd <- flds) addField(_)
   }
   
-  def lookupCurClsMethTable(compactMeth: CompactMethodIndex) : Option[MethodDef] ={
-   
-     val res = methodTable get compactMeth
-     res
+  def lookupCurClsMethTable(compactMeth: CompactMethodIndex) : Option[MethodDef] = {
+    methodTable get compactMeth
   }
   
   def lookupCurClsInterfaceTableCache(compactMeth: CompactMethodIndex): Option[MethodDef] ={
@@ -790,9 +676,7 @@ case class DalvikClassDef(
     ivt += (compactMeth -> md)
   }
   
-  def getSuperClsDefO: Option[DalvikClassDef] = {
-    DalvikClassDef.forName(this.superName)
-  }
+  def getSuperClsDefO: Option[DalvikClassDef] = { DalvikClassDef.forName(this.superName) }
 
   // TODO: Test
   // TODO: get interfaces types too
@@ -831,15 +715,10 @@ case class DalvikClassDef(
    */
   
   def getSuperStrsIncludingInterfaces(res: List[String])(curClass: String) : List[String] = {
-    val classSupers = getSupersStr(res)(curClass)
-    
-      this.interfaceNames ::: classSupers 
-    
+    this.interfaceNames ::: getSupersStr(res)(curClass)
   }
   
-   def registerClass(clsName: String) {
-    DalvikClassDef.classTable += (clsName -> this)
-  }
+   def registerClass(clsName: String) = DalvikClassDef.classTable += (clsName -> this)
    
    /**
     * This will be called for entry points
@@ -851,10 +730,8 @@ case class DalvikClassDef(
       this.methods.filter((methDef) => {
         (methDef.methodPath == initPath) && (!methDef.attrs.contains("private"))
       })
-      
    }
-   override def toString = "\n\n"+ "CLASSNAME: "+ className + "\n" +superName + "\n" + "++ Field" + fields + "\n" + "++ Method: " + methods
-
+   override def toString = f"\n\nCLASSNAME: $className\n$superName\n++ Field$fields\n++ Method: $methods"
 }
 
 /**
@@ -874,35 +751,26 @@ object DalvikClassDef {
      })
    }
    
-     def getAllClInitStmts: List[Stmt] = {
-     getAllClassConstructors.map(_.body)
-     }
+  def getAllClInitStmts: List[Stmt] = { getAllClassConstructors.map(_.body) }
      
-     def getAllClInitPaths: List[String] ={
-       getAllClassConstructors.map(_.methodPath)
-     }
+  def getAllClInitPaths: List[String] = { getAllClassConstructors.map(_.methodPath) }
      
-     def isInterface(name: String) : Boolean = {
-       /**
-        * we only search through the entire class table
-        */
-     val values = classTable.values 
-     val res = values.filter((clsDef) => {
-       val ifs = clsDef.interfaceNames
-       if(ifs.contains(name)) true else false
-     })
-     ! res.isEmpty
-     }
+  def isInterface(name: String) : Boolean = {
+	  /**
+	   * we only search through the entire class table
+	   */
+	  classTable.values.exists((clsDef) => { clsDef.interfaceNames.contains(name) })
+  }
 
   /**
    * ****
    * direct/super/virtual
-   * if found, in currnet classDef, then return
-   * otherwise, get the currentclasss super class.
+   * if found, in current classDef, then return
+   * otherwise, get the current class's super class.
    * and continue to find.
    * But, when to stop?
    * or we can compute the supers beforehand.
-   * suoers are all the classes we can find in the app class table,
+   * supers are all the classes we can find in the app class table,
    * if we hit some class that's not defined in the current table,
    * we still return  None
    * but if for override method, we are going to find the method in
@@ -941,10 +809,8 @@ object DalvikClassDef {
   def getSuperOfCurCls(clsName: String) : String = {
     val curClassDefO = DalvikClassDef.forName(clsName)
      curClassDefO match {
-        		case Some(curClsDef) => {
-        		  curClsDef.superName
-        		}
-        		case None => "" }
+     case Some(curClsDef) => curClsDef.superName
+     case None => "" }
   }
    
    /**
@@ -957,24 +823,24 @@ object DalvikClassDef {
     * some default class types, for example, the java/lang/Exception, it is not in the Dalvik class
     * Definition!
     * 
-    * Modification: just elimietes the type of itself. Since we can detect it directly
+    * Modification: just eliminates the type of itself. Since we can detect it directly
     */
-    def isInstanceofParents(curCls : String,   otherClsName: String) : Boolean = {
-      val curClasDefOp = DalvikClassDef.forName(curCls)
-        curClasDefOp match {
-        		case Some(curClsDef) => {
-        			val curSupers =  curClsDef.getSupers(List())(curCls)
-        			val curAllSupers =  (defaultClasses ::: curSupers)
-        			  curAllSupers.contains(otherClsName)
-        		}
+     def isInstanceofParents(curCls : String,   otherClsName: String) : Boolean = {
+    	 val curClasDefOp = DalvikClassDef.forName(curCls)
+    			 curClasDefOp match {
+    			 case Some(curClsDef) => {
+    				 val curSupers =  curClsDef.getSupers(List())(curCls)
+    				 val curAllSupers =  (defaultClasses ::: curSupers)
+    				 curAllSupers.contains(otherClsName)
+    			 }
 
-        		case None => {
-        		  Debug.prntDebugInfo("Dalvik isInstanceOf class Not found! " , curCls)
-        		   defaultClasses.contains(otherClsName)
-        		}
-      }
-    }
-    
+    			 case None => {
+    				 Debug.prntDebugInfo("Dalvik isInstanceOf class Not found! " , curCls)
+    				 defaultClasses.contains(otherClsName)
+    			 }
+    	 }
+     }
+
     def defaultClasses : List[String] = {
       List("java/lang/Exception", 
           "java/lang/ClassNotFoundException", 
@@ -992,9 +858,9 @@ object DalvikClassDef {
     }
     
   /**
-   * This will first look up in the interface vritual table cache
+   * This will first look up in the interface virtual table cache
    * if not found, then will do normal method resolution
-   * If found, not only returns the result, but also update the interfae table
+   * If found, not only returns the result, but also update the interface table
    */
     
     def lookUpInterfaceMethod(clsName: String, methPath: String, argTypes: List[String]): List[MethodDef] = {
@@ -1002,32 +868,27 @@ object DalvikClassDef {
          val methClassDefO = forName(clsName)
          methClassDefO match {
          case Some(d) => {
-           d.lookupCurClsInterfaceTableCache(methIndex) match {
-             case Some(md) => {
-              List(md)
-             }
-          case None => { // go through the normal method resolution process 
-            val methName = StringUtils.getMethNameFromMethPath(methPath)
-            val actualMathPath = StringUtils.getDistinctMethodOrFieldPath(clsName, methName, "meth")
-         
-            val actualmethIndex = CompactMethodIndex(actualMathPath, argTypes)
-            d.lookupCurClsMethTable(actualmethIndex) match {
-              case Some(md) => {
-                d.cacheFoundInterfaceDef(methIndex, md)
-                List(md)
-              }
-              case None => {
-                 val climRes = resolveMethod(d, actualmethIndex)
-                climRes
-              }
-            }
-          }
-        }
-      }
-        case None => {
-               Debug.prntDebugInfo("class not found for intreafx ", methIndex.toString())
-               List()
-            }
+        	 d.lookupCurClsInterfaceTableCache(methIndex) match {
+               case Some(md) => List(md)
+        	   case None => { // go through the normal method resolution process 
+        		 val methName = StringUtils.getMethNameFromMethPath(methPath)
+        		 val actualMathPath = StringUtils.getDistinctMethodOrFieldPath(clsName, methName, "meth")
+        				 
+        		 val actualmethIndex = CompactMethodIndex(actualMathPath, argTypes)
+        		 d.lookupCurClsMethTable(actualmethIndex) match {
+        		   case Some(md) => {
+        			   d.cacheFoundInterfaceDef(methIndex, md)
+        			   List(md)
+        		   }
+        		   case None => resolveMethod(d, actualmethIndex)
+        		 }
+        	   }
+        	 }
+         }
+         case None => {
+        	 Debug.prntDebugInfo("class not found for intreafx ", methIndex.toString())
+        	 List()
+         }
        }
     }
     
@@ -1039,45 +900,33 @@ object DalvikClassDef {
         case Some(d) => {
           
           d.lookupCurClsMethTable(methIndex) match {
-            case Some(md) => {
-            
-              List(md)
-            }
+            case Some(md) => List(md)
             case None => {
-             
-             
               /**
                * since the invoke-direct will invoke super class's constructor on subclass's instance object
                * which made us can't find the superclass init path on the subclss's meta information
                * here we  switch to use class path directly maybe the following guaad don't need.
                */
-            
                val objClsName = d.className
                val mathPath = methIndex.methodPath
                val methPathClsName = StringUtils.getClassPathFromMethPath(mathPath)
                val methName = StringUtils.getMethNameFromMethPath(mathPath)
                if(methName == "<init>" && objClsName != methPathClsName && methPathClsName!= "java/lang/Object"){
-                // we'll just get the clas path the direct method
-                 DalvikClassDef.forName(methPathClsName) match{
-                   case Some(dccd) => {
-                       dccd.lookupCurClsMethTable(methIndex) match {
-                         case Some(md) => {List(md)}
+            	   // we'll just get the class path the direct method
+            	   DalvikClassDef.forName(methPathClsName) match{
+            	   case Some(dccd) => {
+            		   dccd.lookupCurClsMethTable(methIndex) match {
+            		     case Some(md) => {List(md)}
                          case None => List()
                        }
-                   }
+            	   }
                    case None => {List()}
                  }
-                 
-               }else{
-                  List()
-               }
+               } else { List() }
             }
           }
         }
-        case None => {
-       
-          List()
-        }
+        case None => { List() }
       }
    }
    
@@ -1097,40 +946,43 @@ object DalvikClassDef {
       //virtual 
       case 2 => {
          MethClassDef match {
-         case Some(d) => {
-          resolveMethod(d, methIndex)
-        }
-        case None => {
-          Debug.prntDebugInfo("Virtual oR direct method lookup Failed! Class definition not found for method", methIndex)
-          List()
-        }
-      }
-      }
-             // will just find the currnet objclass's super class and try find the method
-         case 4 => {
-            MethClassDef match {
-         case Some(d) => {
-           d.getSuperClsDefO match {
-            case Some(sucl) => {
-              sucl.lookupCurClsMethTable(methIndex) match{
-                case Some(smd) => List(smd)
-                case None => List()
-              }
-            }
-            case None => {
-              List()
-            }
-          }
-        }
+           case Some(d) => resolveMethod(d, methIndex)
+           case None => {
+        	 Debug.prntDebugInfo("Virtual oR direct method lookup Failed! Class definition not found for method", methIndex)
+        	 List()
+           }
          }
-         }
+      }
+             // will just find the current objclass's super class and try find the method
+      case 4 => {
+    	  MethClassDef match {
+    	    case Some(d) => {
+    		  d.getSuperClsDefO match {
+    		    case Some(sucl) => {
+    			  sucl.lookupCurClsMethTable(methIndex) match{
+    			  case Some(smd) => List(smd)
+    			  case None => List()
+    			  }
+    		    }
+    		    case None => List()
+    		  }
+    	    }
+    	  }
+      }
     }
 }
 }
 
 case class InterfaceMethodSignature(methPath: String, sthTypeLst: List[String], retType: String)
 
-case class MethodDef(methPath: String, ats: List[String], rn: BigInt, atl: List[String], retT: String, bd: Stmt, localHandlers: ExceptionHandlers, annotationExns: List[String]) {
+case class MethodDef(methPath: String,
+					 ats: List[String],
+					 rn: BigInt,
+					 atl: List[String],
+					 retT: String,
+					 bd: Stmt,
+					 localHandlers: ExceptionHandlers,
+					 annotationExns: List[String]) {
   def regsNum = rn
   def attrs = ats
   val methodPath = methPath
@@ -1149,10 +1001,9 @@ case class MethodDef(methPath: String, ats: List[String], rn: BigInt, atl: List[
      }  
    }*/
    
-    "\n" + "MethNamePath: " + methodPath + "\n" +  "RegNUm: " + rn.toString() + "\n" + "Modifiers: " + attrs + "\n" +
-                             "Formal Types: " + argTypeList + "\n" +
-                           "Return Type: " + retType + "\n" + "Stmts:" + stmts.length  //+ "\n" + "Second Stmt: " + testSecondLin
-                           //body.toString() //CommonUtils.flattenLinkedStmt(List())(body) 
+   f"\nMethNamePath: $methodPath\nRegNum: ${rn.toString()}\nModifiers: $attrs\nFormal Types: $argTypeList\nReturn Type: $retType\nStmts: ${stmts.length}"
+   //+ "\n" + "Second Stmt: " + testSecondLin
+   //body.toString() //CommonUtils.flattenLinkedStmt(List())(body) 
   } 
                           
 }
@@ -1162,24 +1013,18 @@ case class FieldDef(fp: String, atrs: List[String], ft: String) {
   def attrs = atrs
   def fieldPath = fp
   def fieldType = ft
-
 }
 
-class ParsingExpcetion(str: String) extends Exception
-
+class ParsingException(str: String) extends Exception
 
 case class ExceptionHandler(typeStr: String, exnTy: String, fromLblStr: String, toLblStr: String, usingLblStr: String)  {
-
   override def toString =  "ExceptionHandler(" + typeStr + ","+ exnTy + "," + fromLblStr  + "," + toLblStr  +")"
 }
 
 case class ExceptionHandlers(handlerLst : List[ExceptionHandler]) {
   def getAllHandlerTypes : List[String] = handlerLst.map(_.exnTy)
-  def getFinallyHandlers: List[ExceptionHandler] = handlerLst.filter((ty) => {
-    if(ty == "finally") true else false
-  })
-  def getNonFinallyHandlers: List[ExceptionHandler] = handlerLst.filter((ty) =>  if(ty == "normal") true else false
-  )
+  def getFinallyHandlers: List[ExceptionHandler] = handlerLst.filter((ty) => (ty.typeStr == "finally"))
+  def getNonFinallyHandlers: List[ExceptionHandler] = handlerLst.filter((ty) =>  (ty.typeStr == "normal"))
   
   def getNOnFinallyExnAndLabelPairs: List[(String, String)] = getNonFinallyHandlers.map((h) => (h.exnTy, h.usingLblStr))
   def getAllExnAndLabelPairs: List[(String, String)] = handlerLst.map((h) => (h.exnTy, h.usingLblStr))
@@ -1197,7 +1042,7 @@ case class ExceptionHandlers(handlerLst : List[ExceptionHandler]) {
           res ::: List((p._1, realN))
         }
         case None => {
-          println("the label " + lblStr + "was not found in Stmt: Source, getAllExnAndNxtStPairs method")
+          Debug.prntDebugInfo("label not found in Stmt: Source, getAllExnAndNxtStPairs method", lblStr)
           res 
         }
       }
@@ -1217,7 +1062,7 @@ case class ExceptionHandlers(handlerLst : List[ExceptionHandler]) {
           res ::: List((p._1, realN))
         }
         case None => {
-          println("the label " + lblStr + "was not found in Stmt: Source, getAllExnAndNxtStPairs method")
+          Debug.prntDebugInfo("label not found in Stmt: Source, getAllExnAndNxtStPairs method", lblStr)
           res 
         }
       }
@@ -1225,11 +1070,8 @@ case class ExceptionHandlers(handlerLst : List[ExceptionHandler]) {
   }
    
    
-   def getMatchedHandlers(exnTypes: List[String]) : List[ExceptionHandler] = {
-      handlerLst.filter((h) => {
-        if(exnTypes.contains(h.exnTy)) true else false
-      })
-   }
+   def getMatchedHandlers(exnTypes: List[String]) : List[ExceptionHandler] =
+	   { handlerLst.filter((h) => exnTypes.contains(h.exnTy)) }
 }
 
 

@@ -9,7 +9,6 @@ trait StateSpace {
   
   type :-> [T, S ] = Map[T,S]
   // provided in particular impl
- // type Addr 
   // continuation addr
   type KAddr 
   
@@ -59,7 +58,6 @@ case class FramePointer(t: Time, meth: Stmt) extends Pointer {
   abstract class OffsetAddr extends Addr {
     def pointer : Pointer
     def offset : String
-  
   }
   
   case class KontAddr extends Addr
@@ -73,7 +71,6 @@ case class FramePointer(t: Time, meth: Stmt) extends Pointer {
   case class FieldAddr(op: ObjectPointer, field: String) extends OffsetAddr {
     def pointer = op
     def offset = field
-   
   }
   // ..
   
@@ -113,14 +110,10 @@ case class FramePointer(t: Time, meth: Stmt) extends Pointer {
   abstract class AbstractNumLit extends Value
   case class NumLit(n: BigInt) extends AbstractNumLit
   case object NumTop extends AbstractNumLit
-  def mkNumLit(n: BigInt): AbstractNumLit = {
-    if (n > 2) {
-      NumTop
-    } else if (n < -2) {
-      NumTop
-    } else {
-      NumLit(n)
-    }
+  def mkNumLit(n: BigInt): AbstractNumLit = { // Make -1,0,1 special
+    if (n > 2) { NumTop }
+    else if (n < -2) { NumTop }
+    else { NumLit(n) }
   }
   
   case class IntValue(val v: BigInt) extends Value {

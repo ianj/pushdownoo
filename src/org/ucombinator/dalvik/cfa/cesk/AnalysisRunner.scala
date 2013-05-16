@@ -55,11 +55,7 @@ abstract class AnalysisRunner(opts: AIOptions) extends FancyOutput
       case AnalysisType.PDCFA => "-PDCFA"
     }
 
-    val analysis = if (opts.dummy) {
-      "dummy"
-    } else {
-      opts.k
-    }
+    val analysis = if (opts.dummy) "dummy" else opts.k
     val withGC = if (opts.gc) "-gc" else ""
     analysis + cfa + withGC
   }
@@ -100,9 +96,7 @@ abstract class AnalysisRunner(opts: AIOptions) extends FancyOutput
       buffer.append("Interrupted after " + opts.interruptAfter + " states.")
     }
    
-    if (isVerbose) {
-      println(buffer.toString)
-    }
+    if (isVerbose) { println(buffer.toString) }
 
     if (opts.dumpStatistics) {
       val statDir = new Directory(new File(statisticsDirName))
@@ -152,9 +146,7 @@ abstract class AnalysisRunner(opts: AIOptions) extends FancyOutput
       buffer.append("Interrupted after " + opts.interruptAfter + " states.")
     }
 
-    if (isVerbose) {
-      println(buffer.toString)
-    }
+    if (isVerbose) { println(buffer.toString) }
 
     if (opts.dumpStatistics) {
       val statDir = new Directory(new File(statisticsDirName))
@@ -171,15 +163,13 @@ abstract class AnalysisRunner(opts: AIOptions) extends FancyOutput
       }
       val path = subfolderPath + File.separator + getStatisticsDumpFileName(opts)
       val file = new File(path)
-      if (!file.exists()) {
-        file.createNewFile()
-      }
+      if (!file.exists()) { file.createNewFile() }
       val writer = new FileWriter(file)
 
       writer.write(buffer.toString)
       writer.close()
 
-      println("Statistics dumped into: " + path)
+      println(s"Statistics dumped into: $path")
 
       path
     } else ""

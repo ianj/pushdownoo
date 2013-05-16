@@ -14,9 +14,7 @@ import org.ucombinator.dalvik.vmrelated.APISpecs
 import org.ucombinator.dalvik.statistics.Statistics
 
 
-trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
-
-  //type Kont = List[Frame]
+trait StackCESKMachinery extends CESKMachinery with TransitionHandlers {
 
   // StackCESK machine has no continuation pointer
   type KAddr = Unit
@@ -35,7 +33,6 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
    *  step function into super type!
    * ***********************************************
    */
-  //def mnext: Conf => Set[Conf] = {
   def mnext(conf: Conf): Set[Conf] = {
     conf match {
 
@@ -46,21 +43,17 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
        */
       //goto
       case c @ (ps @ PartialState(StForEqual(gl @ (GotoStmt(lbl, nextSt, lineSt, clsP, metP)), nstt, lss, clsPP, methPP), fp, s, kptr, t), k) => {
-        Debug.prntDebugInfo("@In GotoStmt: ", gl)
-        //  Debug.prntDebugInfo("belong to line: ", gl.ln.lineNumber)
         val curN = gl.next
-        Debug.prntDebugInfo("CurNext is: ", curN)
         val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
+        Debug.prntDebugInfo("@In GotoStmt: ", gl)
+        Debug.prntDebugInfo("CurNext is: ", curN)
         Debug.prntDebugInfo("RealNext is: ", realN)
 
         val tp = tick(t, List(gl))
         val nextStOption = Stmt.forLabel(lbl)
         val nextSt =
           nextStOption match {
-            case Some(nextst) => {
-              nextst
-
-            }
+            case Some(nextst) => nextst
             case None => throw new SemanticException("GotoStmt's label stmt unfound in Label Table!")
           }
         val realN1 = CommonUtils.findNextStmtNotLineOrLabel(nextSt)
@@ -102,7 +95,7 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
           (PartialState(buildStForEqual(realN ), fp, s, kptr, tp), k))
       }
 
-      // packed-swtich or sparse-swtich
+      // packed-switch or sparse-switch
       /**
        * we will explore all the branches + the fall through state
        * no bother to test the register
@@ -122,8 +115,8 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
       /**
        * **************
        * invoke; ah
-       * 1. InvokeStmt: non-static, so no object register, but climing up the class ladders
-       * 2. InvokeStaticStmt: no  climing up the class ladders
+       * 1. InvokeStmt: non-static, so no object register, but climbing up the class ladders
+       * 2. InvokeStaticStmt: no  climbing up the class ladders
        * 3. invoke super
        * 4. invoke direct
        * 5. invoke interface
@@ -148,8 +141,8 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
           val objVals = filterObjValues(possibleValues)
           handleExternalLibCalls(methPath, ivkS, argRegExps, objVals, ls, s, realN, fp: FramePointer, kptr, t, tp, k)
         } /**
-           * in the calling API with exceptions thrown, one brach is continue, normal case.
-           * The other case is to branch to injected thrown statse.
+           * in the calling API with exceptions thrown, one branch is continue, normal case.
+           * The other case is to branch to injected thrown states.
            */ /*
           else
             if(APISpecs.isInAPISpecsbyName(methPath) ) {
@@ -265,13 +258,13 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
           tyStrs, tp, s, kptr, t, k)
 
       }
-      //case class AssignAExpStmt(lhReg: AExp, rhExp: AExp, nxt: Stmt, ls : Stmt) extends Stmt {
+
       case c @ (ps @ PartialState(StForEqual(assignS @ AssignAExpStmt(lhReg, rhExp, nxt, ls, clsP, metP), nxss, lss, clsPP, methPP), fp, s, kptr, t), k) => {
+        val curN = assignS.next
+        val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
         Debug.prntDebugInfo("@AssignAExpStmt: ", assignS)
         Debug.prntDebugInfo("belong to line: ", assignS.lineNumber)
-        val curN = assignS.next
         Debug.prntDebugInfo("CurNext is: ", curN)
-        val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
         Debug.prntDebugInfo("RealNext is: ", realN)
 
         val tp = tick(t, List(assignS))
@@ -281,15 +274,15 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
       }
 
       case c @ (ps @ PartialState(StForEqual(newS @ NewStmt(destReg, clsName, nxt, ls, clsP, metP), nxss, lss, clsPP, methPP), fp, s, kptr, t), k) => {
-        Debug.prntDebugInfo("@NewStmt", newS)
-        Debug.prntDebugInfo("belong to line: ", newS.lineNumber)
         val curN = newS.next
-        Debug.prntDebugInfo("CurNext is: ", curN)
         val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
-        Debug.prntDebugInfo("RealNext is: ", realN)
         val tp = tick(t, List(newS))
         val destRegExp = newS.destRegister
         val destAddr = fp.offset(newS.destReg.toString())
+        Debug.prntDebugInfo("@NewStmt", newS)
+        Debug.prntDebugInfo("belong to line: ", newS.lineNumber)
+        Debug.prntDebugInfo("CurNext is: ", curN)
+        Debug.prntDebugInfo("RealNext is: ", realN)
         if (isStringBulder(clsName)) {
           val newOP = ObjectPointer(t, clsName, newS.lineNumber)
           val objVal = ObjectValue(newOP, clsName)
@@ -306,36 +299,34 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
           val newStore = storeUpdate(s, List((destAddr, Set(objVal))))
           // storeStrongUpdate(s, List((destAddr, Set(objVal))))
           Debug.prntDebugInfo("New Object Created at not String Builder:\n", (destAddr, Set(objVal)))
-          // initialize the fields of the currnet class and return new store?
+          // initialize the fields of the current class and return new store?
           val newStore2 = initObject(newS.classPath, newStore, newOP)
           val newState = (PartialState(buildStForEqual(realN ), fp, newStore2, kptr, tp), k)
           Set(newState)
         }
       }
 
-      // case class FieldAssignStmt(lhr: AExp, fe: AExp, nxt: Stmt, ls: Stmt)  extends Stmt {
       case c @ (ps @ PartialState(StForEqual(fldAssgS @ FieldAssignStmt(lhReg, rhExp, nxt, ls, clsP, metP), nxss, lss, clsPP, methPP), fp, s, kptr, t), k) => {
+        val curN = fldAssgS.next
+        val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
+        val tp = tick(t, List(fldAssgS))
         Debug.prntDebugInfo("@FieldAssignStmt", fldAssgS)
         Debug.prntDebugInfo("belong to line: ", fldAssgS.lineNumber)
-        val curN = fldAssgS.next
         Debug.prntDebugInfo("CurNext is: ", curN)
-        val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
         Debug.prntDebugInfo("RealNext is: ", realN)
-        val tp = tick(t, List(fldAssgS))
 
         handleFieldAssign(fldAssgS, s, realN, fp, kptr, tp, k)
 
       }
 
-      //case class MoveExceptionStmt(nameReg: AExp, nxt: Stmt, ls: Stmt) extends Stmt
       case c @ (ps @ PartialState(StForEqual(mvExpS @ MoveExceptionStmt(nameReg, nxt, ls, clsP, metP), nxss, lss, clsPP, methPP), fp, s, kptr, t), k) => {
+        val curN = mvExpS.next
+        val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
+        val tp = tick(t, List(mvExpS))
         Debug.prntDebugInfo("@MoveExceptionStmt", mvExpS)
         Debug.prntDebugInfo("belong to line: ", mvExpS.lineNumber)
-        val curN = mvExpS.next
         Debug.prntDebugInfo("CurNext is: ", curN)
-        val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
         Debug.prntDebugInfo("RealNext is: ", realN)
-        val tp = tick(t, List(mvExpS))
 
         val objVals = storeLookup(s, fp.offset("exn"))
         val destRegExp = nameReg match {
@@ -349,7 +340,6 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
         Set(newState)
       }
 
-      //case class PopHandlerStmt(nxt: Stmt, ls: Stmt) extends Stmt {
       case c @ (ps @ PartialState(StForEqual(popHS @ PopHandlerStmt(exnT, nxt, ls, clsP, metP), nxss, lss, clsPP, methPP), fp, s, kptr, t), hf @ HandleFrame(handlerType, clsName, lbl) :: k) => {
 
         val curN = popHS.next
@@ -395,8 +385,7 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
               Debug.prntDebugInfo("@ReturnStmt: Return-*", retS)
               val retAddr = getReturnOffSet(fpCaller)
               val retVal = atomEval(resultAe, fp, s)
-          //    val newStore = storeUpdate(s, List((retAddr, retVal)))
-               val newStore = storeStrongUpdate(s, List((retAddr, retVal)))
+              val newStore = storeStrongUpdate(s, List((retAddr, retVal)))
               val newState = (PartialState(buildStForEqual(realCallerNext ), fpCaller, newStore, kptr, tp), k)
 
               Set(newState)
@@ -420,30 +409,26 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
         val exnRegExp = getRegExp(exn, "Throw Statement: Register Expression expected. Found: ")
         val exnVals = atomEval(exnRegExp, fp, s)
         val objVals = filterAbsObjValues(exnVals)
-         //println("uncaught exanv vals: ", objVals.toList.length)
         val liveRegs = Stmt.liveMap.getOrElse(buildStForEqual(nxss), Set())
-       // println(lss + clsPP + methPP)
-          Statistics.recordThrowPointsTo(stq, objVals.map(_.toString))
+        Statistics.recordThrowPointsTo(stq, objVals.map(_.toString))
         thrownUncaughtExnStates(objVals, s, fp, kptr, tp, clsP, metP, liveRegs)
       }
 
       case c @ (ps @ PartialState(stq@StForEqual(tS @ ThrowStmt(exn, nxt, ls, clsP, metP), nxss, lss, clsPP, methPP), fp, s, kptr, t), FNKFrame(_, _) :: k) => {
        //println("ThrowStmt fnk on top")
-          val exnVals = atomEval(exn, fp, s)
+        val exnVals = atomEval(exn, fp, s)
         val objVals = filterAbsObjValues(exnVals)
        
          Statistics.recordThrowPointsTo(stq, objVals.map(_.toString))
         Set((ps, k))
       }
 
-      //case class ThrowStmt(exn: AExp, nxt: Stmt, ls: Stmt) extends Stmt {
       case c @ (ps @ PartialState(stq@StForEqual(tS @ ThrowStmt(exn, nxt, ls, clsP, metP), nxss, lss, clsPP, methPP), fp, s, kptr, t), hf @ HandleFrame(handlerType, clsName, lbl) :: k) => {
 
-      // println("@ThrowStmt: ", tS)
-        Debug.prntDebugInfo("belong to line: ", tS.lineNumber)
         val curN = tS.next
-        Debug.prntDebugInfo("CurNext is: ", curN)
         val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
+        Debug.prntDebugInfo("belong to line: ", tS.lineNumber)
+        Debug.prntDebugInfo("CurNext is: ", curN)
         Debug.prntDebugInfo("RealNext is: ", realN)
         val tp = tick(t, List(tS))
         val exnRegExp = getRegExp(exn, "Throw Statement: Register Expression expected. Found: ")
@@ -451,7 +436,6 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
         val objVals = filterAbsObjValues(exnVals)
       
         Statistics.recordThrowPointsTo(stq, objVals.map(_.toString))
-        //handleNormalThrownStmtdef(tS, objVals.map(_.asInstanceOf[Value]), s, realN, fp, kptr, tp, k)
         handleNormalThrownStmt(ps, handlerType, clsName, lbl, tS, objVals.map(_.asInstanceOf[Value]), s, nxt: Stmt, fp, kptr, t, k)
       }
 
@@ -480,13 +464,11 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
       case c @ (ps @ PartialState(stq@StForEqual(itS @ InjectThrownStmt(exnValues, nxt, ls, clsP, methP), nxss, lss, clsPP, methPP), fp, s, kptr, t), hf @ HandleFrame(handlerType, clsName, lbl) :: k) => {
          Statistics.recordThrowPointsTo(stq, exnValues.map(_.toString))
         handleNormalThrownStmt(ps, handlerType, clsName, lbl, itS, itS.exnValues, s, nxt, fp, kptr, t, k)
-        // handleInjectExnStmt(itS, s, nxt, fp, kptr, t, k)
       }
 
       case c @ (PartialState(stq@StForEqual(eS @ EntryPointInvokeStmt(en, objRegStr, nxt, ls, clsP, methP), nxss, lss, clsPP, methPP), fp, s, kptr, t), k) => {
 
-        // Debug.prntDebugInfo("belong to line: ", eS.lineNumber)
-        val curN = eS.next
+    	val curN = eS.next
         val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
         val argTypeList = en.argTypes
         Debug.prntDebugInfo("@@EntryPointInvokeStmt: the argLength ", argTypeList.length)
@@ -500,7 +482,6 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
         Statistics.recordCallObjs(stq, curObjVals.map(_.toString))
         
         if (curObjVals.isEmpty) {
-       
           throw new StackCESKException("the entry point invoke statmt can't find its instance object to invoke on!!!" + eS)
         } else {
           curObjVals.map((curObjVal) => {
@@ -515,19 +496,19 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
       /**
        * The stmt is added to initialize the entry point
        * after this, there will be multiple component entry points/handlers
-       * after each init, if tehre were multiple init functions for a class
+       * after each init, if there were multiple init functions for a class
        * that the entry point belongs to
        */
       case c @ (PartialState(StForEqual(ieS @ InitEntryPointStmt(methodPath, argsTypes, body, regsNum, nxt, ln, clsP, methP), nsxx, lss, clsPP, methPP), fp, s, kptr, t), k) => {
         Debug.prntDebugInfo("@@@InitEntryPointStmt: ", ieS)
         val curN = ieS.next
-        Debug.prntDebugInfo("CurNext is: ", curN)
         val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
-        Debug.prntDebugInfo("RealNext is: ", realN)
         val thisRegStr = CommonUtils.getThisRegStr(regsNum, argsTypes.length)
         val thisRegExpOffset = fp.offset(thisRegStr)
         val methP = ieS.methodPath
         val entryClassName = StringUtils.getClassPathFromMethPath(methP)
+        Debug.prntDebugInfo("CurNext is: ", curN)
+        Debug.prntDebugInfo("RealNext is: ", realN)
 
         // create the initial ObjetValue for the class
         val newOP = ObjectPointer(t, entryClassName, ieS.lineNumber)
@@ -535,7 +516,7 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
 
         // instantiate the class field map
         val newStore = storeUpdate(s, List((thisRegExpOffset, Set(objVal))))
-        // initialize the fields of the currnet class and return new store?
+        // initialize the fields of the current class and return new store?
         val newStore2 = initObject(entryClassName, newStore, newOP)
 
         val absValues = argsTypes.map(typeToTopValue(_, newOP))
@@ -556,20 +537,16 @@ trait StackCESKMachinary extends CESKMachinary with TransitionHandlers {
       }
       //for unhandled instructions, move forward to the next stmt
       case c @ (ps @ PartialState(StForEqual(stmt, nxss, lss, clsPP, methPP), fp, s, kptr, t), k) => {
-        //         println("@ unHandled!!!!!!: empty Nil K is "+ stmt + "\n", k)
         val tp = tick(t, List(stmt))
-        // Debug.prntDebugInfo("current is:  ", stmt)
         val curN = stmt.next
-        // Debug.prntDebugInfo("CurNext is: ", curN)
         val realN = CommonUtils.findNextStmtNotLineOrLabel(curN)
-        //  println("RealNext is: ", realN)
         Set((PartialState(buildStForEqual(realN ), fp, s, kptr, tp), k))
       }
       /**
        * Alright, let's get out
        */
       case (FinalState(), Nil) => Set()
-
+      case _ => throw new StackCESKException("Cannot step state " + conf);
     }
   }
 

@@ -1,19 +1,15 @@
 package org.ucombinator.dalvik.specialAPIs
 import org.ucombinator.dalvik.syntax.Stmt
-import org.ucombinator.dalvik.cfa.cesk.CESKMachinary
+import org.ucombinator.dalvik.cfa.cesk.CESKMachinery
 import org.ucombinator.dalvik.cfa.cesk.StateSpace
 import org.ucombinator.dalvik.syntax.{AExp, RegisterExp}
 import org.ucombinator.utils.Debug
 import org.ucombinator.dalvik.syntax.StForEqual
 
 
-trait RawStringLibsAI extends StateSpace with CESKMachinary{
-
- 
+trait RawStringLibsAI extends StateSpace with CESKMachinery{
   
-  
-   def isStringBulder(clsName: String) : Boolean = 
-    if(clsName == "java/lang/StringBuilder") true else false
+   def isStringBulder(clsName: String) : Boolean = (clsName == "java/lang/StringBuilder")
     
   /*private def isInvokingDirectStringBuilderInit(methPath: String) : Boolean = 
     if(methPath == "java/lang/StringBuilder/<init>") true else false
@@ -37,7 +33,7 @@ trait RawStringLibsAI extends StateSpace with CESKMachinary{
  
   /**
    * Append will make the "value" field in the object Pointer(s) all to top,
-   * no matter what the other argument's absrtact values
+   * no matter what the other argument's abstract values
    * and the return value will be bounded to all the the objVals. 
    * This sucks. the object pointers (values) for string will be many
    */
@@ -53,7 +49,7 @@ trait RawStringLibsAI extends StateSpace with CESKMachinary{
  
  /**
   * This happens in invokeStatic stmt
-  * there is one argument, which is refering to the string object pointer
+  * there is one argument, which is referring to the string object pointer
   * we will get the "value" of the objPointer, and extend the store for the (ret,fp)
   */
   def handleStringValueof(invokS: Stmt, argRegExps: List[AExp], objVals: Set[ObjectValue], ls: Stmt, s: Store, realN: Stmt, fp: FramePointer, kptr: KAddr, t: Time, tp: Time, k: Kont): Set[Conf] = {
@@ -71,7 +67,17 @@ trait RawStringLibsAI extends StateSpace with CESKMachinary{
      Set(((PartialState(StForEqual(realN, realN.next, realN.clsPath, realN.methPath,realN.lineNumber), fp, newStore, kptr, tp), k)))
  }
  
-   def handleStringBuilderInit(invokS: Stmt, argRegExps: List[AExp], objValss: Set[ObjectValue], ls: Stmt, s: Store, realN: Stmt, fp: FramePointer, kptr: KAddr, t: Time, tp: Time, k: Kont): Set[Conf] = {
+   def handleStringBuilderInit(invokS: Stmt,
+		   					   argRegExps: List[AExp],
+		   					   objValss: Set[ObjectValue],
+		   					   ls: Stmt,
+		   					   s: Store,
+		   					   realN: Stmt,
+		   					   fp: FramePointer,
+		   					   kptr: KAddr,
+		   					   t: Time,
+		   					   tp: Time,
+		   					   k: Kont): Set[Conf] = {
     val objVals = filterStrBuilderObjVals(objValss)
     val strBuilderOp = ObjectPointer(t, "java/lang/StringBuilder", ls)
     val arglen = argRegExps.length
@@ -97,7 +103,7 @@ trait RawStringLibsAI extends StateSpace with CESKMachinary{
       }
       case _ => {
         //Set(((PartialState(realN, fp, s, kptr, tp), k)))
-        throw new CESKException("StringBUilder init method has more than 1 arguments?!!! Deal with it! " + invokS) 
+        throw new CESKException("StringBuilder init method has more than 1 arguments?!!! Deal with it! " + invokS) 
       }
     }
   }

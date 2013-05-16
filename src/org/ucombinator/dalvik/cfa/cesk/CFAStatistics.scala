@@ -2,13 +2,13 @@ package org.ucombinator.dalvik.cfa.cesk
 
 
 /*
- *  more statics needed. 
+ *  more statistics needed. 
  */
 
 case class CFAStatistics 
 (timeSec: Long,
  //numExp: Int,
- //numVars: Int, thsi one might not be available
+ //numVars: Int, this one might not be available
  //numSingletons: Int,
  numStates: Int,
  numEdges: Int,
